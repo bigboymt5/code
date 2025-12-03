@@ -1,0 +1,62 @@
+# VSCode
+.vscode/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+log/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build files
+*.exe
+*.dll
+*.ex5
+*.ex4
+*.obj
+*.pch
+*.ilk
+*.iobj
+*.ipdb
+*.pdb
+*.exp
+*.lib
+*.tlog
+
+# Visual Studio
+.vs/
+Debug/
+Release/
+x64/
+*.suo
+*.user
+*.vcxproj.filters
+*.vcxproj.user
+*.VC.db
+*.ipch
+*.FileListAbsolute.txt
+DocumentLayout.json
+DocumentLayout.backup.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Embedded git repos (submodules should be added properly)
+xau/ticker/BAK/
+
+# Sensitive files - credentials
+**/클라이언트*.txt
+**/*credential*.txt
+**/*secret*.txt
+**/*password*.txt
+**/*oauth*.txt

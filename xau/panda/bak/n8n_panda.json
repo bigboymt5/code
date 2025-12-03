@@ -1,0 +1,313 @@
+{
+  "name": "n8n_panda",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 19 * * *"
+            }
+          ]
+        }
+      },
+      "id": "2a8842b8-1b44-4db7-99af-f07c4a75a093",
+      "name": "매일 오후 7시 트리거",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -528,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://vps105.cafe24.com:5003/api/ticker/?h_tic={{ $json.symbol }}",
+        "options": {}
+      },
+      "id": "a0ccec4d-1d33-4f84-9083-e27cf43fd7e8",
+      "name": "BTCUSD 시세 API 호출",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// API 응답 데이터를 LLM용 메타프롬프트로 정리\nconst input = $input.first();\nconst apiData = input.json;\nconst symbol = $('비트코인 심볼 설정').first().json.symbol;\nconst name = $('비트코인 심볼 설정').first().json.name;\n\n// 기술적 분석 데이터 정리\nconst technicalAnalysis = {\n  symbol: apiData.symbol || symbol,\n  name: name,\n  current_price: apiData.current_price,\n  yesterday_price: apiData.yesterday_price,\n  price_change: apiData.current_price - apiData.yesterday_price,\n  price_change_percent: ((apiData.current_price - apiData.yesterday_price) / apiData.yesterday_price * 100).toFixed(2),\n  \n  // RSI 분석\n  rsi: {\n    value: apiData.analysis?.rsi?.value,\n    status: apiData.analysis?.rsi?.status,\n    interpretation: apiData.analysis?.rsi?.value < 30 ? '과매도' : \n                    apiData.analysis?.rsi?.value > 70 ? '과매수' : '중립'\n  },\n  \n  // MACD 분석\n  macd: {\n    macd: apiData.analysis?.macd?.macd,\n    signal: apiData.analysis?.macd?.signal,\n    histogram: apiData.analysis?.macd?.histogram,\n    trend: apiData.analysis?.macd?.trend\n  },\n  \n  // 볼린저 밴드\n  bollinger_bands: {\n    upper: apiData.analysis?.bollinger_bands?.upper,\n    middle: apiData.analysis?.bollinger_bands?.middle,\n    lower: apiData.analysis?.bollinger_bands?.lower,\n    position: apiData.analysis?.bollinger_bands?.position\n  },\n  \n  // 이동평균선\n  ema: {\n    ema7: apiData.analysis?.ema?.ema7,\n    ema21: apiData.analysis?.ema?.ema21,\n    ema50: apiData.analysis?.ema?.ema50\n  },\n  \n  // 지지/저항선\n  support_resistance: {\n    recent_high: apiData.analysis?.support_resistance?.recent_high,\n    recent_low: apiData.analysis?.support_resistance?.recent_low,\n    all_time_high: apiData.analysis?.support_resistance?.all_time_high,\n    all_time_low: apiData.analysis?.support_resistance?.all_time_low\n  },\n  \n  // 스토캐스틱\n  stochastic: {\n    k: apiData.analysis?.stochastic?.k,\n    d: apiData.analysis?.stochastic?.d,\n    status: apiData.analysis?.stochastic?.status\n  },\n  \n  // 변동성\n  atr: {\n    value: apiData.analysis?.atr?.value,\n    volatility: apiData.analysis?.atr?.volatility\n  }\n};\n\n// LLM용 메타프롬프트 생성\nconst metaPrompt = `다음은 ${name}(${symbol})의 실시간 기술적 분석 데이터입니다:\n\n## 가격 정보\n- 현재가: ${technicalAnalysis.current_price}\n- 어제 종가: ${technicalAnalysis.yesterday_price}\n- 변동폭: ${technicalAnalysis.price_change}\n- 변동률: ${technicalAnalysis.price_change_percent}%\n\n## 기술적 지표\n\n### RSI (상대강도지수)\n- 값: ${technicalAnalysis.rsi.value}\n- 상태: ${technicalAnalysis.rsi.status}\n- 해석: ${technicalAnalysis.rsi.interpretation}\n\n### MACD\n- MACD: ${technicalAnalysis.macd.macd}\n- Signal: ${technicalAnalysis.macd.signal}\n- Histogram: ${technicalAnalysis.macd.histogram}\n- 트렌드: ${technicalAnalysis.macd.trend}\n\n### 볼린저 밴드\n- 상단: ${technicalAnalysis.bollinger_bands.upper}\n- 중간: ${technicalAnalysis.bollinger_bands.middle}\n- 하단: ${technicalAnalysis.bollinger_bands.lower}\n- 현재 위치: ${technicalAnalysis.bollinger_bands.position}\n\n### 이동평균선 (EMA)\n- EMA 7: ${technicalAnalysis.ema.ema7}\n- EMA 21: ${technicalAnalysis.ema.ema21}\n- EMA 50: ${technicalAnalysis.ema.ema50}\n\n### 지지/저항선\n- 최근 고점: ${technicalAnalysis.support_resistance.recent_high}\n- 최근 저점: ${technicalAnalysis.support_resistance.recent_low}\n- 역대 최고가: ${technicalAnalysis.support_resistance.all_time_high}\n- 역대 최저가: ${technicalAnalysis.support_resistance.all_time_low}\n\n### 스토캐스틱\n- K: ${technicalAnalysis.stochastic.k}\n- D: ${technicalAnalysis.stochastic.d}\n- 상태: ${technicalAnalysis.stochastic.status}\n\n### 변동성 (ATR)\n- 값: ${technicalAnalysis.atr.value}\n- 변동성: ${technicalAnalysis.atr.volatility}\n\n위 데이터를 바탕으로 전문적인 시세 분석을 제공하세요.`;\n\nreturn [{ \n  json: { \n    symbol: symbol,\n    name: name,\n    technicalAnalysis: technicalAnalysis,\n    metaPrompt: metaPrompt,\n    rawApiData: apiData\n  } \n}];"
+      },
+      "id": "c7003420-bfaf-4030-a44b-f594a575e0b6",
+      "name": "메타프롬프트 작성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "symbol",
+              "value": "BTCUSD",
+              "type": "string"
+            },
+            {
+              "id": "name",
+              "name": "name",
+              "value": "골드시세",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f6de164b-8c72-4ea1-bd74-1d094209db65",
+      "name": "비트코인 심볼 설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -304,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "who",
+              "value": "panda",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f4ae08fa-ca69-462e-8cc7-a352f7fecfff",
+      "name": "캐릭터설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -288,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "당신은 전문 금융 뉴스 작가입니다. 제공된 기술적 분석 데이터와 어제 발생한 주요 사건들을 바탕으로 뉴스 기사의 서론을 작성하세요. 서론은 독자의 관심을 끌고 핵심 내용을 요약해야 합니다."
+            },
+            {
+              "role": "user",
+              "content": "={{ $('메타프롬프트 작성').item.json.metaPrompt }}\n\n## 어제 발생한 주요 사건:\n={{ $('Google Sheets - 어제 사건 읽기').all() }}\n\n위 데이터를 바탕으로 어제의 주요 사건과 현재 시세를 연결하여 뉴스 기사의 흥미로운 서론을 작성해주세요. (3-4문장)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "name": "OpenAI - 뉴스 서론 작성",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "당신은 전문 금융 분석가입니다. 제공된 기술적 분석 데이터를 바탕으로 10가지 핵심 뉴스 내용을 작성하세요. 각 항목은 구체적이고 실용적인 정보를 담아야 합니다."
+            },
+            {
+              "role": "user",
+              "content": "={{ $('메타프롬프트 작성').item.json.metaPrompt }}\n\n위 데이터를 바탕으로 다음 형식으로 10가지 핵심 뉴스 내용을 작성해주세요:\n\n1. [첫 번째 내용]\n2. [두 번째 내용]\n...\n10. [열 번째 내용]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+      "name": "OpenAI - 뉴스 10가지 내용 작성",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        416,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://fal.run/fal-ai/flux/dev",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "falAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"{{ $json.message.content }}\\n\\n위 10가지 뉴스 내용을 시각적으로 표현하는 전문적이고 현대적인 금융 뉴스 이미지. 차트, 그래프, 금융 아이콘 포함. 고품질, 사실적인 스타일.\",\n  \"image_size\": \"landscape_16_9\",\n  \"num_inference_steps\": 28,\n  \"guidance_scale\": 3.5,\n  \"num_images\": 1,\n  \"enable_safety_checker\": true\n}",
+        "options": {}
+      },
+      "id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+      "name": "fal.ai - 이미지 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": ""
+        },
+        "options": {
+          "range": "A:Z"
+        }
+      },
+      "id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
+      "name": "Google Sheets - 어제 사건 읽기",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        64,
+        640
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "매일 오후 7시 트리거": {
+      "main": [
+        [
+          {
+            "node": "비트코인 심볼 설정",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "캐릭터설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BTCUSD 시세 API 호출": {
+      "main": [
+        [
+          {
+            "node": "메타프롬프트 작성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "메타프롬프트 작성": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - 뉴스 서론 작성",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets - 어제 사건 읽기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - 어제 사건 읽기": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - 뉴스 서론 작성",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "OpenAI - 뉴스 서론 작성": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - 뉴스 10가지 내용 작성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - 뉴스 10가지 내용 작성": {
+      "main": [
+        [
+          {
+            "node": "fal.ai - 이미지 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fal.ai - 이미지 생성": {
+      "main": [
+        []
+      ]
+    },
+    "비트코인 심볼 설정": {
+      "main": [
+        [
+          {
+            "node": "BTCUSD 시세 API 호출",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b98a12f9-448b-444c-99dc-222ca4898dc3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0ec0cd6163e2bca624199bbe41654256fd925b94d8edb9a5baa2eeebd6fe5622"
+  },
+  "id": "wybJncMgcBW9oOnX",
+  "tags": []
+}

@@ -1,0 +1,14 @@
+date,time,balance,equity,profit,floating_profit,drawdown,today_profit,yesterday_profit,week_profit,month_profit,total_profit,server,symbol,nickname,ip
+2025-11-07,10:56:06,30000.00,33000.00,0.00,,,,,,,,VantageInternational-Live 11,BTCUSD.sc,Gold40,210.114.12.92
+2025-11-07,10:56:12,30000.00,33000.00,0.00,,,,,,,,VantageInternational-Live 11,BTCUSD.sc,Gold40,210.114.12.92
+2025-11-07,11:13:41,30000.00,32997.39,-2.61,,,,,,,,VantageInternational-Live 11,BTCUSD.sc,Gold40,210.114.12.92
+2025-11-07,12:46:17,30007.71,33007.71,0.00,,,,,,,,VantageInternational-Live 11,BTCUSD.sc,Gold40,210.114.12.92
+2025-11-07,13:18:19,30388.73,33591.33,202.60,,,,,,,,VantageInternational-Live 11,BTCUSD.sc,Gold40,210.114.12.92
+2025-11-09,10:54:02,31363.58,34363.58,0.00,,,,,,,,VantageInternational-Live 11,XAUUSD.sc,Gold40,210.114.12.92
+2025-11-10,03:27:13,31852.24,30255.25,-4596.99,,,,,,,,VantageInternational-Live 11,XAUUSD.sc,Gold40,210.114.12.92
+2025-11-10,03:44:23,31852.24,30618.19,-4234.05,,,,,,,,VantageInternational-Live 11,XAUUSD.sc,Gold40,210.114.12.92
+2025-11-13,05:22:31,34322.76,37322.76,0.00,,,,,,,,VantageInternational-Live 11,XAUUSD.sc,Gold40,210.114.12.92
+2025-11-13,05:22:31,34322.76,37322.76,0.00,,,,,,,,VantageInternational-Live 11,BTCUSD.sc,Gold40,210.114.12.92
+2025-11-15,12:55:03,36625.24,32036.36,-7588.88,,,,,,,,VantageInternational-Live 11,XAUUSD.sc,Gold40,210.114.12.92
+2025-11-15,12:55:03,36625.24,32036.36,-7588.88,,,,,,,,VantageInternational-Live 11,BTCUSD.sc,Gold40,210.114.12.92
+2025-11-19,06:59:15,35806.96,30673.47,-8133.49,,,,,,,,VantageInternational-Live 11,XAUUSD.sc,Gold40,210.114.12.92

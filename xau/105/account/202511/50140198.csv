@@ -1,0 +1,3 @@
+date,time,balance,equity,profit,floating_profit,drawdown,today_profit,yesterday_profit,week_profit,month_profit,total_profit,server,symbol,nickname,ip
+2025-11-10,11:57:03,248.85,248.85,0.00,,,,,,,,TradeMaxGlobal-Live,XAUUSD,Gold40,121.161.38.46
+2025-11-10,11:57:03,248.85,248.85,0.00,0.00,28.67,0.00,0.00,0.00,0.00,26.69,TradeMaxGlobal-Live,XAUUSD,Gold40,121.161.38.46

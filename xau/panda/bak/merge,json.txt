@@ -1,0 +1,145 @@
+{
+  "name": "panda_total copy",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 다운로드 가능한 URL 생성\nconst file_id = $input.first().json.id;\nconst file_name = $input.first().json.name;\nconst download_url = `https://drive.google.com/uc?export=download&id=${file_id}`;\n\nreturn {\n  json: {\n    audio_url: download_url,\n    file_id: file_id,\n    file_name: file_name\n  }\n};"
+      },
+      "id": "49381978-ca1f-4134-9714-e19967bb97e8",
+      "name": "4. 다운로드 URL 생성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1456, -96]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "=1sJmqm-uHDnqN7clqYJTjTcrOGtd7BNMT",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "29687601-e22a-42c0-895a-e41fa707c529",
+      "name": "1. 사진 다운로드",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1456, 96],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6nCEilbQlmVgXMDY",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const API_KEY = \"sk_V2_hgu_kZldA0wChel_jo5GxyjoxsJ6gggolWF9lMsuF5jmutPk\";\nconst UPLOAD_URL = \"https://upload.heygen.com/v1/asset\";\n\n// Merge 노드에서 병합된 데이터 확인\nconst items = $input.all();\nconsole.log('=== 병합 데이터 확인 ===');\nconsole.log('병합된 아이템 수:', items.length);\n\nfor (let i = 0; i < items.length; i++) {\n  console.log(`아이템[${i}] JSON 키:`, Object.keys(items[i].json));\n  console.log(`아이템[${i}] Binary 존재:`, !!items[i].binary);\n}\n\n// 이미지 바이너리 데이터 찾기 (두번째 아이템에 있음)\nlet image_buffer;\nlet mime_type = 'image/jpeg';\nlet audio_url = '';\n\ntry {\n  // 첫번째 아이템에서 audio_url 가져오기\n  if (items[0] && items[0].json && items[0].json.audio_url) {\n    audio_url = items[0].json.audio_url;\n    console.log('오디오 URL 찾음:', audio_url);\n  }\n  \n  // 두번째 아이템에서 이미지 바이너리 찾기\n  let imageItemIndex = -1;\n  for (let i = 0; i < items.length; i++) {\n    if (items[i].binary && items[i].binary.data) {\n      imageItemIndex = i;\n      console.log(`이미지 바이너리 발견: 아이템[${i}]`);\n      break;\n    }\n  }\n  \n  if (imageItemIndex === -1) {\n    throw new Error('이미지 바이너리 데이터를 찾을 수 없습니다');\n  }\n  \n  // 해당 인덱스의 바이너리 데이터 가져오기\n  image_buffer = await this.helpers.getBinaryDataBuffer(imageItemIndex, 'data');\n  mime_type = items[imageItemIndex].binary.data.mimeType || 'image/jpeg';\n  \n  console.log('이미지 MIME 타입:', mime_type);\n  console.log('이미지 버퍼 크기:', image_buffer.length);\n  \n  // HeyGen API 호출\n  const response = await this.helpers.httpRequest({\n    method: 'POST',\n    url: UPLOAD_URL,\n    headers: {\n      'X-Api-Key': API_KEY,\n      'Content-Type': mime_type\n    },\n    body: image_buffer,\n    encoding: null,\n    json: false\n  });\n  \n  const result = typeof response === 'string' ? JSON.parse(response) : response;\n  \n  console.log('=== HeyGen 응답 ===');\n  console.log('Image ID:', result.data.id);\n  console.log('Image URL:', result.data.url);\n  \n  return {\n    json: {\n      image_id: result.data.id,\n      image_url: result.data.url,\n      image_name: result.data.name,\n      audio_url: audio_url\n    }\n  };\n  \n} catch (error) {\n  console.error('=== HeyGen 이미지 업로드 오류 ===');\n  console.error('오류 메시지:', error.message);\n  console.error('오류 스택:', error.stack);\n  throw new Error(`이미지 업로드 실패: ${error.message}`);\n}"
+      },
+      "id": "3b2cd299-6a4c-4042-b0f7-3bdb14b41594",
+      "name": "2. HeyGen 이미지 업로드",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1904, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_kZldA0wChel_jo5GxyjoxsJ6gggolWF9lMsuF5jmutPk"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"talking_photo\",\n        \"talking_photo_id\": \"{{ $json.image_id }}\"\n      },\n      \"voice\": {\n        \"type\": \"audio\",\n        \"audio_url\": \"{{ $json.audio_url }}\"\n      }\n    }\n  ],\n  \"test\": false,\n  \"dimension\": {\n    \"width\": 1920,\n    \"height\": 1080\n  }\n}",
+        "options": {}
+      },
+      "id": "7176cb32-d628-4f82-9574-9efcfcefcfa4",
+      "name": "3. HeyGen 비디오 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2128, 0]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "4c534c69-783a-4635-8198-1213be8f18ed",
+      "name": "오디오+이미지 병합",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1680, 0]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "4. 다운로드 URL 생성": {
+      "main": [
+        [
+          {
+            "node": "오디오+이미지 병합",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. 사진 다운로드": {
+      "main": [
+        [
+          {
+            "node": "오디오+이미지 병합",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "2. HeyGen 이미지 업로드": {
+      "main": [
+        [
+          {
+            "node": "3. HeyGen 비디오 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "오디오+이미지 병합": {
+      "main": [
+        [
+          {
+            "node": "2. HeyGen 이미지 업로드",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4e0475dd-96c1-4955-b764-24737f2a5fa0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5a66dec860b2ae4bdca24e847c4e6aeda3f8317efdf2ada99cd36450328ac452"
+  },
+  "id": "cyLXCC33BFGwc6r9",
+  "tags": []
+}

@@ -1,0 +1,895 @@
+{
+  "name": "시세 분석 자동화 (API 키 적용완료)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "10 19 * * *"
+            }
+          ]
+        }
+      },
+      "id": "d12225b3-0940-46e6-a386-32305228ea49",
+      "name": "매일 오후 7시 10분 트리거",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1168,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "symbol",
+              "value": "BTCUSD",
+              "type": "string"
+            },
+            {
+              "id": "name",
+              "name": "name",
+              "value": "비트코인",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "56579d01-0c6d-4ec3-9c6f-fe28c52aae79",
+      "name": "비트코인 심볼 설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -928,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://vps105.cafe24.com:5003/api/ticker/?h_tic={{ $json.symbol }}",
+        "options": {}
+      },
+      "id": "c69b641d-0b74-454d-af0b-405b348d6949",
+      "name": "BTCUSD 시세 API 호출",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -992,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: '당신은 금융 시장 분석 전문가입니다. 웹 검색 결과를 바탕으로 정확한 시세 분석을 제공합니다. 반드시 JSON 형식으로만 응답하세요.'\n    },\n    {\n      role: 'user',\n      content: `다음 심볼에 대해 최신 정보를 분석하세요:\\n\\n심볼: ${$json.symbol}\\n종목명: ${$json.name}\\n\\n다음 정보를 수집하고 분석하세요:\\n\\n1. 어제 종가와 현재 시세 (실시간 가격 데이터)\\n2. 오늘의 가격 변동 및 간략한 시장 동향 요약\\n3. 기술적 분석 (RSI, MACD, 이동평균선, 지지/저항선 등)\\n4. 전문가 분석 및 시장 예측\\n5. 종합 평가 및 투자 의견 (Strong BUY / BUY / HOLD / SELL / Strong SELL)\\n\\n반드시 아래 JSON 형식으로만 응답하세요:\\n\\n{\\n  \"symbol\": \"심볼코드\",\\n  \"name\": \"종목명\",\\n  \"prices\": {\\n    \"yesterday_close\": \"어제 종가\",\\n    \"current_price\": \"현재가\",\\n    \"change\": \"변동폭\",\\n    \"change_percent\": \"변동률(%)\"\\n  },\\n  \"market_summary\": \"시장 동향 요약 (2-3문장)\",\\n  \"technical_analysis\": {\\n    \"rsi\": \"RSI 수치 및 해석\",\\n    \"macd\": \"MACD 신호\",\\n    \"moving_average\": \"이동평균선 분석\",\\n    \"support_resistance\": \"지지선/저항선\",\\n    \"overall\": \"기술적 분석 종합 의견\"\\n  },\\n  \"expert_analysis\": {\\n    \"summary\": \"전문가 의견 요약\",\\n    \"forecast\": \"향후 전망\",\\n    \"key_factors\": [\"주요 영향 요인1\", \"주요 영향 요인2\"]\\n  },\\n  \"recommendation\": {\\n    \"rating\": \"Strong BUY | BUY | HOLD | SELL | Strong SELL\",\\n    \"confidence\": \"신뢰도 (1-10)\",\\n    \"reasoning\": \"평가 근거 (3-5문장)\"\\n  },\\n  \"timestamp\": \"${new Date().toISOString()}\"\\n}\\n\\n중요: 반드시 유효한 JSON 형식으로만 응답하고, JSON 외의 다른 텍스트는 포함하지 마세요.`\n    }\n  ],\n  temperature: 0.3,\n  max_tokens: 2000,\n  response_format: { type: 'json_object' }\n}) }}",
+        "options": {}
+      },
+      "id": "7d669c26-b0a0-4e7e-a53b-756b9ea7dc80",
+      "name": "OpenAI 시세 분석",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -272,
+        688
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "xLiKGk1HIqbV45T1",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// OpenAI 응답에서 JSON 추출\nconst input = $input.first();\nconst response = input.json;\n\ntry {\n  // OpenAI 응답 구조: response.choices[0].message.content\n  const content = response.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  return [{ json: parsed }];\n} catch (error) {\n  console.error('JSON 파싱 실패:', error);\n  console.log('원본 응답:', JSON.stringify(response, null, 2));\n  throw new Error('OpenAI 응답을 JSON으로 파싱할 수 없습니다: ' + error.message);\n}"
+      },
+      "id": "54e14e22-8c96-42b0-89a3-14b33f2964bc",
+      "name": "OpenAI JSON 파싱",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json.symbol }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "날짜": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+            "심볼": "={{ $json.symbol }}",
+            "종목명": "={{ $json.name }}",
+            "어제종가": "={{ $json.prices.yesterday_close }}",
+            "현재가": "={{ $json.prices.current_price }}",
+            "변동폭": "={{ $json.prices.change }}",
+            "변동률": "={{ $json.prices.change_percent }}",
+            "시장요약": "={{ $json.market_summary }}",
+            "RSI": "={{ $json.technical_analysis.rsi }}",
+            "MACD": "={{ $json.technical_analysis.macd }}",
+            "이동평균선": "={{ $json.technical_analysis.moving_average }}",
+            "지지저항선": "={{ $json.technical_analysis.support_resistance }}",
+            "기술분석종합": "={{ $json.technical_analysis.overall }}",
+            "전문가의견": "={{ $json.expert_analysis.summary }}",
+            "향후전망": "={{ $json.expert_analysis.forecast }}",
+            "주요요인": "={{ $json.expert_analysis.key_factors.join(', ') }}",
+            "투자등급": "={{ $json.recommendation.rating }}",
+            "신뢰도": "={{ $json.recommendation.confidence }}",
+            "평가근거": "={{ $json.recommendation.reasoning }}",
+            "분석시각": "={{ $json.timestamp }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "0929ffb2-6193-49d4-8a3c-be4025fc1d76",
+      "name": "Google Sheets 저장",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        112,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.upstash.com/v2/redis/set",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer ASBoAAImcDIyMzcyMDg0YjBlNTE0ZGJjYmEyZWI3NGYyYjYzY2RmOHAyODI5Ng"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([\n  $json.symbol + '_' + $now.format('yyyy-MM-dd'),\n  JSON.stringify($json),\n  'EX',\n  2592000\n]) }}",
+        "options": {}
+      },
+      "id": "68ff795c-236c-46f2-b22b-8ab75b88a2a5",
+      "name": "Redis 저장",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.upstash.com/v2/redis/get",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer ASBoAAImcDIyMzcyMDg0YjBlNTE0ZGJjYmEyZWI3NGYyYjYzY2RmOHAyODI5Ng"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify([\n  $json.symbol + '_' + $now.subtract(1, 'day').format('yyyy-MM-dd')\n]) }}",
+        "options": {}
+      },
+      "id": "6ee47efa-2f97-4150-849b-8f8b43ec316a",
+      "name": "Redis 어제 데이터 조회",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        752
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Redis 응답 처리 및 기본값 설정\nconst input = $input.first();\nconst currentData = $('OpenAI JSON 파싱').first().json;\n\nlet yesterdayData = null;\n\ntry {\n  // Redis 응답이 있으면 파싱\n  if (input.json && input.json.result) {\n    yesterdayData = JSON.parse(input.json.result);\n  }\n} catch (error) {\n  console.log('어제 데이터 없음:', error.message);\n}\n\n// 어제 데이터가 없으면 기본값 사용\nif (!yesterdayData) {\n  yesterdayData = {\n    symbol: currentData.symbol || 'N/A',\n    name: currentData.name || 'N/A',\n    recommendation: {\n      rating: 'HOLD',\n      confidence: '5',\n      reasoning: '어제 데이터가 없습니다.'\n    },\n    prices: {\n      current_price: 'N/A'\n    }\n  };\n}\n\nreturn [{ json: { yesterday: yesterdayData, today: currentData } }];"
+      },
+      "id": "15f43842-94f9-4a33-892e-5b9a1c66aa51",
+      "name": "어제 데이터 처리",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: '당신은 한국의 일상 정보를 친근하게 전달하는 AI입니다. 반드시 JSON 형식으로만 응답하세요.'\n    },\n    {\n      role: 'user',\n      content: `오늘 날짜: ${$now.format('yyyy년 MM월 dd일 (ddd)')}\\n\\n다음 정보를 정리하세요:\\n\\n1. 오늘 날씨 (한국 서울 기준)\\n2. 오늘 절기나 특별한 날\\n3. 오늘의 주요 뉴스 1-2개 (경제/정치/사회)\\n4. 중년 남성을 위한 짧은 건강 팁 또는 생활 팁\\n5. 재테크 한마디 조언\\n6. 시청자 참여 유도 질문\\n\\n반드시 아래 JSON 형식으로만 응답하세요:\\n\\n{\\n  \"date\": \"yyyy년 MM월 dd일 (요일)\",\\n  \"weather\": {\\n    \"condition\": \"날씨 상태\",\\n    \"temperature\": \"온도\",\\n    \"comment\": \"날씨 관련 한마디\"\\n  },\\n  \"special_day\": \"절기나 특별한 날\",\\n  \"news\": [\\n    {\\n      \"title\": \"뉴스 제목\",\\n      \"summary\": \"한줄 요약\"\\n    }\\n  ],\\n  \"health_tip\": {\\n    \"title\": \"건강/생활 팁 제목\",\\n    \"content\": \"2-3문장 설명\",\\n    \"why\": \"왜 중요한지\"\\n  },\\n  \"money_tip\": \"오늘의 재테크 한마디\",\\n  \"question\": \"시청자 참여 유도 질문\"\\n}`\n    }\n  ],\n  temperature: 0.7,\n  max_tokens: 1500,\n  response_format: { type: 'json_object' }\n}) }}",
+        "options": {}
+      },
+      "id": "d2182817-6bab-4838-846e-f8b246890e5c",
+      "name": "OpenAI 서론 콘텐츠 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        176
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "xLiKGk1HIqbV45T1",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// OpenAI 서론 콘텐츠 JSON 파싱\nconst input = $input.first();\nconst response = input.json;\n\ntry {\n  const content = response.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  return [{ json: parsed }];\n} catch (error) {\n  console.error('JSON 파싱 실패:', error);\n  throw new Error('서론 콘텐츠를 JSON으로 파싱할 수 없습니다: ' + error.message);\n}"
+      },
+      "id": "15725e6c-7e92-410a-8a97-07dda58fab79",
+      "name": "서론 JSON 파싱",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: '당신은 아프리카TV \"팬더곰\" 캐릭터입니다. 형님들한테 귀여움 받는 친근한 동생 말투로 2분 방송 대본을 작성합니다.'\n    },\n    {\n      role: 'user',\n      content: `다음 정보로 2분 분량 대본을 작성하세요:\\n\\n서론 콘텐츠:\\n${JSON.stringify($json.intro, null, 2)}\\n\\n오늘 분석:\\n${JSON.stringify($json.today, null, 2)}\\n\\n어제 분석:\\n${JSON.stringify($json.yesterday, null, 2)}\\n\\n말투: 형님들, ㅋㅋㅋ, ㅠㅠ, 친근하고 귀여운 톤\\n\\n구성:\\n1부(30초): 인사, 날씨, 건강팁\\n2부(1분): 시세 분석, 어제 vs 오늘 비교\\n3부(30초): 마무리, 응원\\n\\n대본만 순수 텍스트로 작성하세요 (JSON 아님).`\n    }\n  ],\n  temperature: 0.7,\n  max_tokens: 2000\n}) }}",
+        "options": {}
+      },
+      "id": "d38a0147-47d8-49f5-b216-30afce1f22b6",
+      "name": "OpenAI 대본 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        704,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// OpenAI 대본 추출\nconst input = $input.first();\nconst response = input.json;\n\nconst script = response.choices[0].message.content;\n\nreturn [{ json: { text: script } }];"
+      },
+      "id": "07cd9275-1e28-47c0-8fdb-a954d7a35fee",
+      "name": "대본 추출",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "대본",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "날짜": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+            "심볼": "={{ $('어제 데이터 처리').first().json.today.symbol }}",
+            "종목명": "={{ $('어제 데이터 처리').first().json.today.name }}",
+            "대본": "={{ $json.text }}",
+            "어제투자등급": "={{ $('어제 데이터 처리').first().json.yesterday.recommendation.rating }}",
+            "오늘투자등급": "={{ $('어제 데이터 처리').first().json.today.recommendation.rating }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "7b848c30-a2de-44ee-8a5c-154978124091",
+      "name": "대본 저장",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        1056,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: '대본을 정확히 12개 섹션으로 분할합니다. 반드시 JSON 형식으로 응답하세요.'\n    },\n    {\n      role: 'user',\n      content: `다음 대본을 12개 섹션(각 10초)으로 분할하세요:\\n\\n대본:\\n${$json.text}\\n\\nJSON 형식:\\n{\\n  \"sections\": [\\n    {\\n      \"section_number\": 1,\\n      \"category\": \"서론\",\\n      \"text\": \"섹션 텍스트\",\\n      \"duration\": 10\\n    }\\n  ],\\n  \"total_duration\": 120\\n}\\n\\n정확히 12개 섹션을 생성하세요.`\n    }\n  ],\n  temperature: 0.3,\n  max_tokens: 3000,\n  response_format: { type: 'json_object' }\n}) }}",
+        "options": {}
+      },
+      "id": "310ef1b5-36c2-44dd-9800-bced18bb0bfd",
+      "name": "OpenAI 12개 섹션 분할",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 섹션 분할 JSON 파싱\nconst input = $input.first();\nconst response = input.json;\n\ntry {\n  const content = response.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  if (!parsed.sections || parsed.sections.length !== 12) {\n    throw new Error(`섹션 개수가 ${parsed.sections?.length || 0}개입니다. 12개여야 합니다.`);\n  }\n  \n  return [{ json: parsed }];\n} catch (error) {\n  console.error('JSON 파싱 실패:', error);\n  throw new Error('섹션 분할을 JSON으로 파싱할 수 없습니다: ' + error.message);\n}"
+      },
+      "id": "2330bfe1-4559-41cc-9abf-4e94217a92be",
+      "name": "섹션 JSON 파싱",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-4o',\n  messages: [\n    {\n      role: 'system',\n      content: '금융 방송용 배경 이미지 프롬프트를 영문으로 생성합니다. JSON 형식으로 응답하세요.'\n    },\n    {\n      role: 'user',\n      content: `섹션 정보:\\n${JSON.stringify($json.sections, null, 2)}\\n\\n심볼: ${$('어제 데이터 처리').first().json.today.symbol}\\n\\n각 섹션에 맞는 전문적인 금융 배경 이미지 프롬프트를 영문으로 생성하세요.\\n\\nJSON 형식:\\n{\\n  \"image_prompts\": [\\n    {\\n      \"section_number\": 1,\\n      \"prompt\": \"Professional financial news background...\"\\n    }\\n  ]\\n}\\n\\n12개 모두 생성하세요.`\n    }\n  ],\n  temperature: 0.7,\n  max_tokens: 3000,\n  response_format: { type: 'json_object' }\n}) }}",
+        "options": {}
+      },
+      "id": "8e0a28e1-2207-4261-911c-a33b632bcc40",
+      "name": "OpenAI 이미지 프롬프트",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 이미지 프롬프트 JSON 파싱\nconst input = $input.first();\nconst response = input.json;\n\ntry {\n  const content = response.choices[0].message.content;\n  const parsed = JSON.parse(content);\n  \n  if (!parsed.image_prompts || parsed.image_prompts.length !== 12) {\n    throw new Error(`이미지 프롬프트가 ${parsed.image_prompts?.length || 0}개입니다. 12개여야 합니다.`);\n  }\n  \n  return [{ json: parsed }];\n} catch (error) {\n  console.error('JSON 파싱 실패:', error);\n  throw new Error('이미지 프롬프트를 JSON으로 파싱할 수 없습니다: ' + error.message);\n}"
+      },
+      "id": "867b942b-c8b6-477d-a2d7-00533e019853",
+      "name": "이미지 프롬프트 JSON 파싱",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/43u72KBf9MaiosJR6MbU",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "sk_973ac089744fe86d24d1cf30e5126ccc53e778a7ce911756"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  text: $('대본 추출').first().json.text,\n  model_id: 'eleven_turbo_v2_5',\n  language_code: 'ko',\n  voice_settings: {\n    stability: 0.5,\n    similarity_boost: 0.8,\n    style: 0.5,\n    use_speaker_boost: true\n  }\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "213bb892-3787-4a52-9c1f-698443f13fc9",
+      "name": "ElevenLabs TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1952,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 간단히 1개 이미지만 생성하고 12개 복사 (데모용)\n// 실제로는 Loop 노드로 12개 각각 생성 필요\nconst dummyImage = 'https://placehold.co/1920x1080/1a1a2e/eee?text=Financial+News';\n\nconst images = Array(12).fill(dummyImage);\n\nreturn [{ json: { images } }];"
+      },
+      "id": "2596c339-7ebb-4b18-9642-53abb11991e4",
+      "name": "데모 이미지 (12개)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        704
+      ],
+      "notes": "실제 운영시 Fal.ai로 교체 필요"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 데모용: Hedra 대신 더미 비디오 URL\n// 실제로는 Hedra API 호출 필요\nconst dummyVideoUrl = 'https://example.com/panda-lipsync-demo.mp4';\n\nreturn [{ json: { video_url: dummyVideoUrl } }];"
+      },
+      "id": "fe06ff68-5c8c-4654-859e-a78fa1130611",
+      "name": "데모 립싱크",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        496
+      ],
+      "notes": "실제 운영시 Hedra로 교체 필요"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 데모용: Creatomate 대신 메타데이터만 반환\n// 실제로는 Creatomate API 호출 필요\nconst metadata = {\n  status: 'demo',\n  message: '실제 운영시 Creatomate로 영상 합성',\n  url: 'https://example.com/final-video-demo.mp4'\n};\n\nreturn [{ json: metadata }];"
+      },
+      "id": "964e9d55-68d4-41f9-b214-f2e09fc86ffd",
+      "name": "데모 영상 합성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2320,
+        592
+      ],
+      "notes": "실제 운영시 Creatomate로 교체"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "대본",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "상태": "완료(데모)",
+            "비고": "={{ $json.message }}",
+            "완료시각": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "be55a5b4-9ea2-4153-a6c0-8cdff74eecf3",
+      "name": "Sheets 상태 업데이트",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        2496,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combineByPosition"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        480,
+        176
+      ],
+      "id": "d6665d09-e6b5-41e6-ac76-2a00bd1227b6",
+      "name": "서론+분석 Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge된 데이터를 하나로 합치기\nconst allData = $input.all();\n\nconsole.log('전체 데이터 개수:', allData.length);\nconsole.log('첫 번째 아이템:', JSON.stringify(allData[0]?.json, null, 2));\nif (allData.length > 1) {\n  console.log('두 번째 아이템:', JSON.stringify(allData[1]?.json, null, 2));\n}\n\n// allData[0] = 서론 JSON 파싱 결과\nconst introData = allData[0]?.json || {};\n\n// allData[1] = 어제 데이터 처리 결과 { yesterday, today }\nconst analysisData = allData[1]?.json || {};\n\n// 모든 데이터를 하나의 객체로 합치기\nconst combined = {\n  intro: introData,                      // 서론 (날씨, 건강팁 등)\n  today: analysisData.today || {},       // 오늘 시세 분석\n  yesterday: analysisData.yesterday || {} // 어제 시세 분석\n};\n\nconsole.log('합쳐진 데이터:', JSON.stringify(combined, null, 2));\n\nreturn [{ json: combined }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        208
+      ],
+      "id": "5380948f-97d4-41ae-af10-ddc0e4e0473c",
+      "name": "데이터 합치기"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -544,
+        704
+      ],
+      "id": "10a68b30-f40b-44aa-a9d8-854a2b27c58a",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -544,
+        176
+      ],
+      "id": "c52b62d4-74ae-413e-a13d-398f23499678",
+      "name": "Loop Over Items1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "매일 오후 7시 10분 트리거": {
+      "main": [
+        [
+          {
+            "node": "비트코인 심볼 설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "비트코인 심볼 설정": {
+      "main": [
+        [
+          {
+            "node": "BTCUSD 시세 API 호출",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI 시세 분석": {
+      "main": [
+        [
+          {
+            "node": "OpenAI JSON 파싱",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI JSON 파싱": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets 저장",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Redis 저장",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Redis 어제 데이터 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis 어제 데이터 조회": {
+      "main": [
+        [
+          {
+            "node": "어제 데이터 처리",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "어제 데이터 처리": {
+      "main": [
+        [
+          {
+            "node": "서론+분석 Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "OpenAI 서론 콘텐츠 생성": {
+      "main": [
+        [
+          {
+            "node": "서론 JSON 파싱",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI 대본 생성": {
+      "main": [
+        [
+          {
+            "node": "대본 추출",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "대본 추출": {
+      "main": [
+        [
+          {
+            "node": "대본 저장",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "OpenAI 12개 섹션 분할",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI 12개 섹션 분할": {
+      "main": [
+        [
+          {
+            "node": "섹션 JSON 파싱",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "섹션 JSON 파싱": {
+      "main": [
+        [
+          {
+            "node": "OpenAI 이미지 프롬프트",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI 이미지 프롬프트": {
+      "main": [
+        [
+          {
+            "node": "이미지 프롬프트 JSON 파싱",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "이미지 프롬프트 JSON 파싱": {
+      "main": [
+        [
+          {
+            "node": "ElevenLabs TTS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "데모 이미지 (12개)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ElevenLabs TTS": {
+      "main": [
+        [
+          {
+            "node": "데모 립싱크",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "데모 립싱크": {
+      "main": [
+        [
+          {
+            "node": "데모 영상 합성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "데모 이미지 (12개)": {
+      "main": [
+        [
+          {
+            "node": "데모 영상 합성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "데모 영상 합성": {
+      "main": [
+        [
+          {
+            "node": "Sheets 상태 업데이트",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "서론 JSON 파싱": {
+      "main": [
+        [
+          {
+            "node": "서론+분석 Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "서론+분석 Merge": {
+      "main": [
+        [
+          {
+            "node": "데이터 합치기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "데이터 합치기": {
+      "main": [
+        [
+          {
+            "node": "OpenAI 대본 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "OpenAI 시세 분석",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "OpenAI 서론 콘텐츠 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "31d3f0f7-da05-4956-97a9-f1af43127fac",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0ec0cd6163e2bca624199bbe41654256fd925b94d8edb9a5baa2eeebd6fe5622"
+  },
+  "id": "wybJncMgcBW9oOnX",
+  "tags": []
+}

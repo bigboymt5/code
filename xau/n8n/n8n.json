@@ -1,0 +1,400 @@
+{
+  "name": "HeyGen Complete Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger_001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 400]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.heygen.com/v2/avatars",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_ktpoATLu1iK_yYWcOz0M7FCuWrpICtcGx3l0jq9TUM8f"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get_avatars_001",
+      "name": "Get Available Avatars",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.heygen.com/v2/voices",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_ktpoATLu1iK_yYWcOz0M7FCuWrpICtcGx3l0jq9TUM8f"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get_voices_001",
+      "name": "Get Available Voices",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 500]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "first_avatar",
+              "name": "selected_avatar_id",
+              "value": "={{ $('Get Available Avatars').item.json.data.avatars[0].avatar_id }}",
+              "type": "string"
+            },
+            {
+              "id": "avatar_name",
+              "name": "selected_avatar_name",
+              "value": "={{ $('Get Available Avatars').item.json.data.avatars[0].avatar_name }}",
+              "type": "string"
+            },
+            {
+              "id": "first_voice",
+              "name": "selected_voice_id",
+              "value": "={{ $('Get Available Voices').item.json.data.voices[0].voice_id }}",
+              "type": "string"
+            },
+            {
+              "id": "voice_name",
+              "name": "selected_voice_name",
+              "value": "={{ $('Get Available Voices').item.json.data.voices[0].name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "select_first_001",
+      "name": "Select First Avatar and Voice",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_ktpoATLu1iK_yYWcOz0M7FCuWrpICtcGx3l0jq9TUM8f"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"avatar\",\n        \"avatar_id\": \"{{ $json.selected_avatar_id }}\",\n        \"avatar_style\": \"normal\"\n      },\n      \"voice\": {\n        \"type\": \"text\",\n        \"input_text\": \"안녕하세요, 빅보이입니다. HeyGen API 테스트를 진행하고 있습니다. 자동화된 비디오 생성이 성공적으로 작동하고 있습니다.\",\n        \"voice_id\": \"{{ $json.selected_voice_id }}\"\n      },\n      \"background\": {\n        \"type\": \"color\",\n        \"value\": \"#FFFFFF\"\n      }\n    }\n  ],\n  \"dimension\": {\n    \"width\": 1920,\n    \"height\": 1080\n  },\n  \"test\": true\n}",
+        "options": {}
+      },
+      "id": "generate_video_001",
+      "name": "Generate Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "extract_video_id",
+              "name": "video_id",
+              "value": "={{ $json.data.video_id }}",
+              "type": "string"
+            },
+            {
+              "id": "extract_status",
+              "name": "initial_status",
+              "value": "={{ $json.data.status }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract_video_id_001",
+      "name": "Extract Video ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {
+        "unit": "seconds",
+        "amount": 30
+      },
+      "id": "wait_processing_001",
+      "name": "Wait for Processing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1250, 400],
+      "webhookId": "heygen_wait_webhook"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.heygen.com/v1/video_status.get?video_id={{ $json.video_id }}",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_ktpoATLu1iK_yYWcOz0M7FCuWrpICtcGx3l0jq9TUM8f"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check_status_001",
+      "name": "Check Video Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "status_completed",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check_completed_001",
+      "name": "Is Completed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1650, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "final_status",
+              "name": "final_status",
+              "value": "={{ $json.data.status }}",
+              "type": "string"
+            },
+            {
+              "id": "video_url",
+              "name": "video_url",
+              "value": "={{ $json.data.video_url }}",
+              "type": "string"
+            },
+            {
+              "id": "thumbnail",
+              "name": "thumbnail_url",
+              "value": "={{ $json.data.thumbnail_url }}",
+              "type": "string"
+            },
+            {
+              "id": "duration",
+              "name": "video_duration",
+              "value": "={{ $json.data.duration }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract_final_001",
+      "name": "Extract Video URL",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "still_processing",
+              "name": "message",
+              "value": "비디오가 아직 처리 중입니다. 상태를 다시 확인해주세요.",
+              "type": "string"
+            },
+            {
+              "id": "current_status",
+              "name": "current_status",
+              "value": "={{ $json.data.status }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "still_processing_001",
+      "name": "Still Processing",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [1850, 500]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Available Avatars",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Available Voices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Available Avatars": {
+      "main": [
+        [
+          {
+            "node": "Select First Avatar and Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Available Voices": {
+      "main": [
+        [
+          {
+            "node": "Select First Avatar and Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select First Avatar and Voice": {
+      "main": [
+        [
+          {
+            "node": "Generate Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video": {
+      "main": [
+        [
+          {
+            "node": "Extract Video ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Video ID": {
+      "main": [
+        [
+          {
+            "node": "Wait for Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Processing": {
+      "main": [
+        [
+          {
+            "node": "Check Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Video Status": {
+      "main": [
+        [
+          {
+            "node": "Is Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Completed?": {
+      "main": [
+        [
+          {
+            "node": "Extract Video URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Still Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-12-01T00:00:00.000Z",
+  "versionId": "1"
+}

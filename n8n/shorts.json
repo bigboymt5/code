@@ -1,0 +1,112 @@
+{
+  "name": "Shorts Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "7f259e32-ee03-4c01-a70d-46ba764860ec",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://vps105.cafe24.com:5003/api/ticker/?h_tic=xauusd",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "4a0ebfc8-b00d-42d9-88b4-45450eb027f3",
+      "name": "Get Ticker Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "당신은 금융 투자 시나리오를 만화적 상상력으로 표현하는 크리에이티브 작가입니다. 100배 레버리지로 1억원을 투자한 사람이 청산 후 기분을 5가지 장면으로 묘사합니다.\n\n장면 레벨 기준:\n- 레벨5 (극상승, +5% 이상): 개인비행기로 두바이 가기, 스포츠카로 스위스 달리기, 하와이 호텔 수영장에서 파티, 수영장 딸린 대저택 매입\n- 레벨4 (상승, +2~5%): GV90 SUV 인수, 일본여행 이자카야에서 술\n- 레벨3 (보통, -2~+2%): 집에서 넷플릭스 시청\n- 레벨2 (하락, -2~-5%): 침대에 앉아서 고개 떨구고 울기\n- 레벨1 (극하락, -5% 이하): 한강 다리에서 아래를 쳐다보기\n\n반드시 다음 JSON 배열 형식으로만 답변하세요:\n[\n  {\"level\": 5, \"scene\": \"장면 설명\"},\n  {\"level\": 4, \"scene\": \"장면 설명\"},\n  {\"level\": 3, \"scene\": \"장면 설명\"},\n  {\"level\": 2, \"scene\": \"장면 설명\"},\n  {\"level\": 1, \"scene\": \"장면 설명\"}\n]"
+            },
+            {
+              "role": "user",
+              "content": "={{ \"다음 티커 데이터를 분석하고 현재 가격 변동률에 해당하는 레벨의 장면을 중심으로 5가지 시나리오를 생성해주세요:\\n\\n심볼: \" + $json.symbol + \"\\n현재가: \" + $json.current_price + \"\\n가격변동: \" + $json.price_change + \"\\n변동률: \" + $json.price_change_percent + \"%\\n전일가: \" + $json.yesterday_price }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.9,
+          "responseFormat": "json_object"
+        }
+      },
+      "id": "948dde2d-48b4-4542-a17b-365d7a19506f",
+      "name": "Generate Scenarios with ChatGPT",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.7,
+      "position": [
+        448,
+        0
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "uw1ecP0lu3JFGq1r",
+          "name": "OpenAi account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Ticker Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Ticker Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Scenarios with ChatGPT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "dbccf1c5-9e9f-482b-a8a5-fde3fc816095",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5a66dec860b2ae4bdca24e847c4e6aeda3f8317efdf2ada99cd36450328ac452"
+  },
+  "id": "d5uTZpysGBZu5Kk1",
+  "tags": []
+}

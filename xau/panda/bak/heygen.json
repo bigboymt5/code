@@ -1,0 +1,98 @@
+{
+  "name": "사진+음성→HeyGen 비디오",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.image_file_id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "googledrive-download-image",
+      "name": "1. 사진 다운로드",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [460, 200],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "1",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const API_KEY = \"sk_V2_hgu_kZldA0wChel_jo5GxyjoxsJ6gggolWF9lMsuF5jmutPk\";\nconst UPLOAD_URL = \"https://upload.heygen.com/v1/asset\";\n\nconst image_buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\nconst mime_type = $input.first().binary.data.mimeType || 'image/jpeg';\n\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: UPLOAD_URL,\n  headers: {\n    'X-Api-Key': API_KEY,\n    'Content-Type': mime_type\n  },\n  body: image_buffer,\n  encoding: null,\n  json: false\n});\n\nconst result = typeof response === 'string' ? JSON.parse(response) : response;\n\nreturn {\n  json: {\n    image_id: result.data.id,\n    image_url: result.data.url,\n    image_name: result.data.name\n  }\n};"
+      },
+      "id": "heygen-upload-image",
+      "name": "2. HeyGen 이미지 업로드",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_kZldA0wChel_jo5GxyjoxsJ6gggolWF9lMsuF5jmutPk"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"talking_photo\",\n        \"talking_photo_id\": \"{{ $('2. HeyGen 이미지 업로드').item.json.image_id }}\"\n      },\n      \"voice\": {\n        \"type\": \"audio\",\n        \"audio_url\": \"{{ $('워크플로우 시작').item.json.audio_url }}\"\n      }\n    }\n  ],\n  \"test\": false,\n  \"dimension\": {\n    \"width\": 1920,\n    \"height\": 1080\n  }\n}",
+        "options": {}
+      },
+      "id": "heygen-video-generate",
+      "name": "3. HeyGen 비디오 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200]
+    }
+  ],
+  "connections": {
+    "1. 사진 다운로드": {
+      "main": [
+        [
+          {
+            "node": "2. HeyGen 이미지 업로드",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. HeyGen 이미지 업로드": {
+      "main": [
+        [
+          {
+            "node": "3. HeyGen 비디오 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-11-29T00:00:00.000Z",
+  "versionId": "1"
+}

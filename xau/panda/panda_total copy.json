@@ -1,0 +1,671 @@
+{
+  "name": "panda_total copy",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 19 * * *"
+            }
+          ]
+        }
+      },
+      "id": "7e7f7a57-6c44-46cc-9159-2fcddf78add6",
+      "name": "매일 오후 7시 트리거",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -112,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://vps105.cafe24.com:5003/api/ticker/?h_tic={{ $json.symbol }}",
+        "options": {}
+      },
+      "id": "c2c14396-0a91-46dd-a2c8-b273fb0c5635",
+      "name": "BTCUSD 시세 API 호출",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        304,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "who",
+              "value": "panda",
+              "type": "string"
+            },
+            {
+              "id": "caa34c78-72ea-48c1-9bb4-55a02688e00b",
+              "name": "symbol",
+              "value": "BTCUSD",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "21a7ef9e-d759-4465-be85-be27e4edfb1b",
+      "name": "캐릭터설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        272,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "content": "당신은 youtube 의 컨텐츠 작가이며  라이브 방송에서 처음 인사말 내용을 작성해아 한다.",
+              "role": "system"
+            },
+            {
+              "content": "=라이브 방송의 서론을 작성해야한다.  이것은 Text To Voice  작성용 대본이다. \n방송은 매일 저녁 6시에 시작되고  VJ는 팬더곰 캐릭터의 남자 동생이며 방송용 이름은 {{ $json.who }} 이다 \n시청자들은 40대 ~ 50대 중년남자이고  형님이나 형이고 아주 친근하게 중간 중간 반말로 해도 좋다.\n오늘 현재 날짜는 {{ $json.date }} 이므로 반드시 계절과 체온에 알맞는 대본과 프롬프트를 작성할것 \n\n{\ngreeting : \"\",\nthanks : \"\",\nstart : \"\"\n}\n\n1.greeting : 50자 이상 \n날씨, 건강정보 , 갱년기정보 , 중요한 뉴스 , 생활꿀팁 등 \n시간을 대략  저녁 6시 이후의 인사말이어야 하고 \n내일 날씨, 건강정보 , 경제지식 , 생활꿀팁, 중요한 뉴스  등 오늘 낮에 있었던 최신정보를 검색해서 50자 정도의 내용을 작성해라 \n단, 어제는 {{ $json.topic }} 에 관해서 방송을 했으니 다른 토픽으로 대본을 작성할것 \n \n2.thanks: 50자 이상 \n어제 댓글을 달아주신   {{ $json.nick_name }}  형님들 이름 언급해주기 \n또한 {{ $json.comment }}   이러한 내용의 댓글이 달렸으니 이부분 언급하고  \n100 자까지 대본을 작성할것 \n\n3.start 30자 이상 \n{{ $json.symbol }} 트레이딩에 관한 속담 격언 격려 10자 장도 작성하고  자 이제 본론으로 들어가서  \n또는 이제 시작해봅시다 등  시세분석에 관한 본론으로 들어가자는 말을 해야한다 \n참고로  {{ $json.symbol }} 는 어제 {{ $json.usd }} USD 이며 {{ $json.up_down }} 등락해서 {{ $json.up_down }} ( {{ $json.per }} %) 되었으니\n이 범위내에서 말을 해야함 \n\n \n\n반드시 지킬것 \n- json 형태로 응답할것 \n- greeting  thanks start 이것은 변수명이므로 절대 변경하지 말것 \n- 형님들에게 귀엽고 친근한 스타일의 대본을 작성해라 \n- 음성변환을 위한 텍스트 TTS 이므로 주석 기호 괄호 알파벳 숫자를 사용하지 말것 \n   예) BTCUSD => 비트코인   $3,800  =>  삼천달러 \n- 한글과 ,쉼표 .마침표 ?물음표 ! 4가지 기호만 사용할것 \n\n예시 \n{\ngreeting : \"날씨가... 건강유의...\",\nthanks : \"댓글감사....\",\nstart : \"우리가 가진건 시간....\"\n}\n\n"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "1d05bfbe-70ff-468d-a2bd-b40128d09098",
+      "name": "OpenAI - 뉴스 서론 작성",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        672,
+        816
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "jOscLoJgPQda3mtk",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI",
+          "mode": "list",
+          "cachedResultName": "panda",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "s1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "symbol",
+              "lookupValue": "={{ $json.symbol }}"
+            },
+            {
+              "lookupColumn": "read",
+              "lookupValue": "no"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e1243ccc-a676-48d3-9824-c4d09f0dba47",
+      "name": "Google Sheets - 어제 사건 읽기",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        64,
+        160
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "54fdb939-5962-451f-987e-529049f02cfc",
+              "name": "prompt_sound",
+              "value": "={{ $json.message.content.greeting }},{{ $json.message.content.thanks }},{{ $json.message.content.start }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "946d92b7-32f7-47a5-ba47-d6237e920270",
+      "name": "서론목소리필터",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1344,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "id": "08c2531b-d352-4470-bd6f-33959e118bbb",
+      "name": "5. 대기 (60초)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3504,
+        912
+      ],
+      "webhookId": "wait-webhook-001"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.heygen.com/v1/video_status.get?video_id={{ $json.data.video_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_kZldA0wChel_jo5GxyjoxsJ6gggolWF9lMsuF5jmutPk"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b8c7e179-d845-4c9e-b87c-ef8846966f3e",
+      "name": "6. 상태 확인",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1584,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.data.status }}",
+              "operation": "equals",
+              "value2": "completed"
+            }
+          ]
+        }
+      },
+      "id": "a6beff60-8121-47ce-a4ab-c0338394cba4",
+      "name": "7. 완료 확인",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.video_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "155104ed-2478-40c8-bba2-743e5c5aad0a",
+      "name": "8. 비디오 다운로드",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "57a612c5-a716-4bda-bd73-756dc063dfd2",
+      "name": "재시도 대기1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1808,
+        672
+      ],
+      "webhookId": "wait-webhook-002"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/43u72KBf9MaiosJR6MbU",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "9526f7962e6f0b0912db172eb3872537068b2ec2520a1d2b9f6e094c58b87ee8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $json.prompt_sound }}\",\n  \"model_id\": \"eleven_multilingual_v2\",\n  \"output_format\": \"mp3_44100_128\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "b3320b1a-d93f-4392-abfe-ede9bd9aa800",
+      "name": "1. ElevenLabs TTS 생성1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "id": "cf5b57ba-5c43-4101-8dbb-34d60f393878",
+      "name": "3. 공개 URL 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1280,
+        -96
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6nCEilbQlmVgXMDY",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "=tts_{{ $now.toFormat('yyyyMMdd_HHmmss') }}.mp3",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "id": "d0e5541c-b5c4-4f1d-bb34-05b304fbe15b",
+      "name": "2. Google Drive 업로드",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        976,
+        0
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6nCEilbQlmVgXMDY",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 다운로드 가능한 URL 생성\nconst file_id = $input.first().json.id;\nconst file_name = $input.first().json.name;\nconst download_url = `https://drive.google.com/uc?export=download&id=${file_id}`;\n\nreturn {\n  json: {\n    audio_url: download_url,\n    file_id: file_id,\n    file_name: file_name\n  }\n};"
+      },
+      "id": "8e33bbba-227e-461d-8991-05082de43e30",
+      "name": "4. 다운로드 URL 생성1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2128,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "=1sJmqm-uHDnqN7clqYJTjTcrOGtd7BNMT",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "3567b6d4-01a4-41c5-ab7c-4fc045905653",
+      "name": "1. 사진 다운로드1",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1824,
+        80
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6nCEilbQlmVgXMDY",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const API_KEY = \"sk_V2_hgu_kZldA0wChel_jo5GxyjoxsJ6gggolWF9lMsuF5jmutPk\";\nconst UPLOAD_URL = \"https://upload.heygen.com/v1/asset\";\n\n// Merge 노드에서 병합된 데이터 확인\nconst items = $input.all();\nconsole.log('=== 병합 데이터 확인 ===');\nconsole.log('병합된 아이템 수:', items.length);\n\nfor (let i = 0; i < items.length; i++) {\n  console.log(`아이템[${i}] JSON 키:`, Object.keys(items[i].json));\n  console.log(`아이템[${i}] Binary 존재:`, !!items[i].binary);\n}\n\n// 이미지 바이너리 데이터 찾기 (두번째 아이템에 있음)\nlet image_buffer;\nlet mime_type = 'image/jpeg';\nlet audio_url = '';\nlet file_name = 'image.jpg';\n\ntry {\n  // 첫번째 아이템에서 audio_url 가져오기\n  if (items[0] && items[0].json && items[0].json.audio_url) {\n    audio_url = items[0].json.audio_url;\n    console.log('오디오 URL 찾음:', audio_url);\n  }\n  \n  // 두번째 아이템에서 이미지 바이너리 찾기\n  let imageItemIndex = -1;\n  for (let i = 0; i < items.length; i++) {\n    if (items[i].binary && items[i].binary.data) {\n      imageItemIndex = i;\n      console.log(`이미지 바이너리 발견: 아이템[${i}]`);\n      break;\n    }\n  }\n  \n  if (imageItemIndex === -1) {\n    throw new Error('이미지 바이너리 데이터를 찾을 수 없습니다');\n  }\n  \n  // 해당 인덱스의 바이너리 데이터 가져오기\n  image_buffer = await this.helpers.getBinaryDataBuffer(imageItemIndex, 'data');\n  const binaryData = items[imageItemIndex].binary.data;\n  mime_type = binaryData.mimeType || 'image/jpeg';\n  file_name = binaryData.fileName || 'image.jpg';\n  \n  console.log('이미지 MIME 타입:', mime_type);\n  console.log('이미지 파일명:', file_name);\n  console.log('이미지 버퍼 크기:', image_buffer.length);\n  \n  // FormData 생성 (multipart/form-data)\n  const FormData = require('form-data');\n  const form = new FormData();\n  \n  form.append('file', image_buffer, {\n    filename: file_name,\n    contentType: mime_type\n  });\n  \n  // HeyGen API 호출 (multipart/form-data)\n  const response = await this.helpers.httpRequest({\n    method: 'POST',\n    url: UPLOAD_URL,\n    headers: {\n      'X-Api-Key': API_KEY,\n      ...form.getHeaders()\n    },\n    body: form,\n    json: false\n  });\n  \n  const result = typeof response === 'string' ? JSON.parse(response) : response;\n  \n  console.log('=== HeyGen 응답 ===');\n  console.log('Image ID:', result.data.id);\n  console.log('Image URL:', result.data.url);\n  \n  return {\n    json: {\n      image_id: result.data.id,\n      image_url: result.data.url,\n      image_name: result.data.name,\n      audio_url: audio_url\n    }\n  };\n  \n} catch (error) {\n  console.error('=== HeyGen 이미지 업로드 오류 ===');\n  console.error('오류 메시지:', error.message);\n  console.error('오류 스택:', error.stack);\n  if (error.response) {\n    console.error('API 응답 상태:', error.response.status);\n    console.error('API 응답 데이터:', error.response.data);\n  }\n  throw new Error(`이미지 업로드 실패: ${error.message}`);\n}"
+      },
+      "id": "f80966ac-1df5-42f9-8658-6b2612d7760b",
+      "name": "2. HeyGen 이미지 업로드1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3056,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_kZldA0wChel_jo5GxyjoxsJ6gggolWF9lMsuF5jmutPk"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"talking_photo\",\n        \"talking_photo_id\": \"{{ $json.image_id }}\"\n      },\n      \"voice\": {\n        \"type\": \"audio\",\n        \"audio_url\": \"{{ $json.audio_url }}\"\n      }\n    }\n  ],\n  \"test\": false,\n  \"dimension\": {\n    \"width\": 1920,\n    \"height\": 1080\n  }\n}",
+        "options": {}
+      },
+      "id": "7d2eeed1-d14f-4a7e-b54d-9a7e9b004509",
+      "name": "3. HeyGen 비디오 생성1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3280,
+        544
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9232a662-4a0b-4ef1-b6d4-e56159150323",
+      "name": "오디오+이미지 병합1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2832,
+        544
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "매일 오후 7시 트리거": {
+      "main": [
+        [
+          {
+            "node": "캐릭터설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - 어제 사건 읽기": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - 뉴스 서론 작성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - 뉴스 서론 작성": {
+      "main": [
+        [
+          {
+            "node": "서론목소리필터",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "캐릭터설정": {
+      "main": [
+        [
+          {
+            "node": "BTCUSD 시세 API 호출",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets - 어제 사건 읽기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "서론목소리필터": {
+      "main": [
+        [
+          {
+            "node": "1. ElevenLabs TTS 생성1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. 대기 (60초)": {
+      "main": [
+        [
+          {
+            "node": "6. 상태 확인",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. 상태 확인": {
+      "main": [
+        [
+          {
+            "node": "7. 완료 확인",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. 완료 확인": {
+      "main": [
+        [
+          {
+            "node": "8. 비디오 다운로드",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "재시도 대기1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "재시도 대기1": {
+      "main": [
+        [
+          {
+            "node": "6. 상태 확인",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. ElevenLabs TTS 생성1": {
+      "main": [
+        [
+          {
+            "node": "2. Google Drive 업로드",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. 공개 URL 생성": {
+      "main": [
+        [
+          {
+            "node": "4. 다운로드 URL 생성1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "1. 사진 다운로드1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Google Drive 업로드": {
+      "main": [
+        [
+          {
+            "node": "3. 공개 URL 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. 다운로드 URL 생성1": {
+      "main": [
+        [
+          {
+            "node": "오디오+이미지 병합1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. 사진 다운로드1": {
+      "main": [
+        [
+          {
+            "node": "오디오+이미지 병합1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "2. HeyGen 이미지 업로드1": {
+      "main": [
+        [
+          {
+            "node": "3. HeyGen 비디오 생성1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "오디오+이미지 병합1": {
+      "main": [
+        [
+          {
+            "node": "2. HeyGen 이미지 업로드1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. HeyGen 비디오 생성1": {
+      "main": [
+        [
+          {
+            "node": "5. 대기 (60초)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "88837cd4-71e4-43fa-80bd-19cb58be4fa5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5a66dec860b2ae4bdca24e847c4e6aeda3f8317efdf2ada99cd36450328ac452"
+  },
+  "id": "lZOCIpp7qpYaBqgc",
+  "tags": []
+}

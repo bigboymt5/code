@@ -1,0 +1,18 @@
+LIBRARY "LicenseProtection"
+EXPORTS
+    GetApiTimeout
+    GetServerCheckInterval
+    GetVisualTopMargin
+    GetLineHeight
+    GetPanelHeight
+    GetPanelMargin
+    GetSummaryLineHeight
+    GetMainApiUrl
+    GetBackupApiUrl1
+    GetBackupApiUrl2
+    GetApiPath
+    GetPortNo
+    CheckLicenseOnline
+    CheckAccountLicense
+    CheckDateLicense
+    GetDllVersion

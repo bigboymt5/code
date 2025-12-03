@@ -1,0 +1,936 @@
+{
+  "name": "BTCUSD 일일 시세 조회",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 19 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-daily-7pm",
+      "name": "매일 오후 7시 트리거",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "10 19 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-daily-7pm10",
+      "name": "매일 오후 7시 10분 트리거",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "20 19 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-daily-7pm20",
+      "name": "매일 오후 7시 20분 트리거",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "symbol",
+              "value": "XAUUSD",
+              "type": "string"
+            },
+            {
+              "id": "name",
+              "name": "name",
+              "value": "골드시세",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-xauusd",
+      "name": "골드 심볼 설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "symbol",
+              "value": "BTCUSD",
+              "type": "string"
+            },
+            {
+              "id": "name",
+              "name": "name",
+              "value": "비트코인",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-btcusd",
+      "name": "비트코인 심볼 설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        460,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "symbol",
+              "name": "symbol",
+              "value": "USDKRW",
+              "type": "string"
+            },
+            {
+              "id": "name",
+              "name": "name",
+              "value": "달러환율",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-usdkrw",
+      "name": "달러환율 심볼 설정",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        460,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "model": "gemini-2.0-flash-exp",
+        "prompt": "=당신은 금융 시장 분석 전문가입니다. 다음 심볼에 대해 웹에서 최신 정보를 검색하고 분석하세요:\n\n심볼: {{ $json.symbol }}\n종목명: {{ $json.name }}\n\n다음 정보를 수집하고 분석하세요:\n\n1. 어제 종가와 현재 시세 (실시간 가격 데이터)\n2. 오늘의 가격 변동 및 간략한 시장 동향 요약\n3. 기술적 분석 (RSI, MACD, 이동평균선, 지지/저항선 등)\n4. 전문가 분석 및 시장 예측\n5. 종합 평가 및 투자 의견 (Strong BUY / BUY / HOLD / SELL / Strong SELL)\n\n반드시 아래 JSON 형식으로만 응답하세요:\n\n```json\n{\n  \"symbol\": \"심볼코드\",\n  \"name\": \"종목명\",\n  \"prices\": {\n    \"yesterday_close\": \"어제 종가\",\n    \"current_price\": \"현재가\",\n    \"change\": \"변동폭\",\n    \"change_percent\": \"변동률(%)\"\n  },\n  \"market_summary\": \"시장 동향 요약 (2-3문장)\",\n  \"technical_analysis\": {\n    \"rsi\": \"RSI 수치 및 해석\",\n    \"macd\": \"MACD 신호\",\n    \"moving_average\": \"이동평균선 분석\",\n    \"support_resistance\": \"지지선/저항선\",\n    \"overall\": \"기술적 분석 종합 의견\"\n  },\n  \"expert_analysis\": {\n    \"summary\": \"전문가 의견 요약\",\n    \"forecast\": \"향후 전망\",\n    \"key_factors\": [\"주요 영향 요인1\", \"주요 영향 요인2\"]\n  },\n  \"recommendation\": {\n    \"rating\": \"Strong BUY | BUY | HOLD | SELL | Strong SELL\",\n    \"confidence\": \"신뢰도 (1-10)\",\n    \"reasoning\": \"평가 근거 (3-5문장)\"\n  },\n  \"timestamp\": \"분석 시각 (ISO 8601 형식)\"\n}\n```\n\n중요: 반드시 유효한 JSON 형식으로만 응답하고, JSON 외의 다른 텍스트는 포함하지 마세요.",
+        "options": {
+          "temperature": 0.3,
+          "maxOutputTokens": 8000,
+          "topK": 40,
+          "topP": 0.95,
+          "useWebSearch": true
+        },
+        "text": ""
+      },
+      "id": "gemini-market-analysis",
+      "name": "Gemini 시세 분석 (웹검색)",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        400
+      ],
+      "credentials": {
+        "googleGeminiOAuth2Api": {
+          "id": "gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json.symbol }}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "날짜": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+            "심볼": "={{ $json.symbol }}",
+            "종목명": "={{ $json.name }}",
+            "어제종가": "={{ $json.prices.yesterday_close }}",
+            "현재가": "={{ $json.prices.current_price }}",
+            "변동폭": "={{ $json.prices.change }}",
+            "변동률": "={{ $json.prices.change_percent }}",
+            "시장요약": "={{ $json.market_summary }}",
+            "RSI": "={{ $json.technical_analysis.rsi }}",
+            "MACD": "={{ $json.technical_analysis.macd }}",
+            "이동평균선": "={{ $json.technical_analysis.moving_average }}",
+            "지지저항선": "={{ $json.technical_analysis.support_resistance }}",
+            "기술분석종합": "={{ $json.technical_analysis.overall }}",
+            "전문가의견": "={{ $json.expert_analysis.summary }}",
+            "향후전망": "={{ $json.expert_analysis.forecast }}",
+            "주요요인": "={{ $json.expert_analysis.key_factors.join(', ') }}",
+            "투자등급": "={{ $json.recommendation.rating }}",
+            "신뢰도": "={{ $json.recommendation.confidence }}",
+            "평가근거": "={{ $json.recommendation.reasoning }}",
+            "분석시각": "={{ $json.timestamp }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "google-sheets-save",
+      "name": "Google Sheets 저장",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        900,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONTEXT7_API_URL }}/store",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $json.symbol }}_{{ $now.format('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "data",
+              "value": "={{ JSON.stringify($json) }}"
+            },
+            {
+              "name": "metadata",
+              "value": "={{ JSON.stringify({ symbol: $json.symbol, date: $now.format('yyyy-MM-dd'), type: 'market_analysis' }) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "context7-store",
+      "name": "Context7 저장",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "context7-auth",
+          "name": "Context7 API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CONTEXT7_API_URL }}/retrieve",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $json.symbol }}_{{ $now.subtract(1, 'day').format('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "context7-retrieve-yesterday",
+      "name": "Context7 어제 데이터 조회",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "context7-auth",
+          "name": "Context7 API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "model": "gemini-2.0-flash-exp",
+        "prompt": "=오늘 날짜: {{ $now.format('yyyy년 MM월 dd일 (ddd)') }}\n\n웹에서 다음 정보를 검색하고 친근하게 정리하세요:\n\n1. 오늘 날씨 (한국 서울 기준)\n2. 오늘 절기나 특별한 날\n3. 오늘의 주요 뉴스 1-2개 (경제/정치/사회)\n4. 중년 남성을 위한 짧은 건강 팁 또는 생활 팁\n5. 재테크 한마디 조언\n6. 시청자 참여 유도 질문 (예: \"형님들 오늘 뭐 드셨어요?\", \"요즘 어떤 종목 보고 계세요?\")\n\n반드시 아래 JSON 형식으로만 응답하세요:\n\n```json\n{\n  \"date\": \"yyyy년 MM월 dd일 (요일)\",\n  \"weather\": {\n    \"condition\": \"날씨 상태 (맑음/흐림/비 등)\",\n    \"temperature\": \"온도\",\n    \"comment\": \"날씨 관련 한마디 (예: 옷 따뜻하게 입으세요)\"\n  },\n  \"special_day\": \"절기나 특별한 날 (없으면 빈 문자열)\",\n  \"news\": [\n    {\n      \"title\": \"뉴스 제목\",\n      \"summary\": \"한줄 요약\"\n    }\n  ],\n  \"health_tip\": {\n    \"title\": \"건강/생활 팁 제목\",\n    \"content\": \"2-3문장 설명\",\n    \"why\": \"왜 중요한지 (형 걱정하는 동생 말투로)\"\n  },\n  \"money_tip\": \"오늘의 재테크 한마디\",\n  \"question\": \"시청자 참여 유도 질문\"\n}\n```\n\n중요: 반드시 유효한 JSON 형식으로만 응답하고, JSON 외의 다른 텍스트는 포함하지 마세요.",
+        "options": {
+          "temperature": 0.7,
+          "maxOutputTokens": 2000,
+          "useWebSearch": true
+        },
+        "text": ""
+      },
+      "id": "generate-intro-content",
+      "name": "서론 콘텐츠 생성 (웹검색)",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        200
+      ],
+      "credentials": {
+        "googleGeminiOAuth2Api": {
+          "id": "gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "model": "gemini-2.0-flash-exp",
+        "prompt": "=당신은 아프리카TV에서 방송하는 '팬더곰' 캐릭터입니다. 형님들한테 귀여움 받으면서 거래 정보를 공유하는 친근한 동생 컨셉으로 10분 분량 대본을 작성하세요.\n\n## 서론 콘텐츠 (날씨/건강/뉴스):\n{{ JSON.stringify($('서론 콘텐츠 생성 (웹검색)').item.json, null, 2) }}\n\n## 오늘 분석 결과:\n{{ JSON.stringify($input.first().json, null, 2) }}\n\n## 어제 분석 결과:\n{{ JSON.stringify($input.last().json.data, null, 2) }}\n\n## 캐릭터 말투 가이드:\n- 형님들에게 반말 존댓말 섞어쓰기 (친근하게)\n- \"형님들\", \"여러분\" 자주 사용\n- \"ㅋㅋㅋ\", \"ㅠㅠ\", \"ㄷㄷㄷ\" 같은 인터넷 용어 자연스럽게\n- 자신의 실패담이나 솔직한 감정 표현 (\"저는 망했어요\", \"오늘도 물렸어요\")\n- 가끔 팬더 말장난이나 유머 섞기\n- 너무 진지하지 않고 가볍게\n- 이모티콘 느낌의 표현 (\"헉\", \"오\", \"우와\")\n\n## 대본 작성 요구사항 (10분 분량):\n\n### 1부: 서론 (3-4분) - 날씨/건강/뉴스 스몰토크\n- 인사: \"형님들 안녕~ 팬더곰이에요!\"\n- 오늘 날짜, 요일 언급\n- 날씨 이야기 (형 걱정하는 동생처럼: \"오늘 춥던데 형님들 따뜻하게 입으셨죠?\")\n- 특별한 날이나 절기 있으면 언급\n- 오늘의 뉴스 1-2개 가볍게 (\"형님들 이 뉴스 보셨어요? ㄷㄷ\")\n- 건강 팁 소개 (형 걱정하는 말투로: \"형님들 요즘 ~~ 하시면 안돼요! 제가 걱정돼서 찾아봤는데...\")\n- 재테크 한마디\n- 시청자 참여 질문 (\"채팅으로 알려주세요!\")\n- 자신의 오늘 거래 근황 짧게\n\n### 2부: 본론 (5-6분) - 시세 분석\n- \"자 그럼 오늘의 메인! [종목명] 얘기 해볼게요!\"\n- 어제와 오늘 가격 변화 쉽게 설명\n- 어제 AI 추천 vs 실제 결과 비교 (\"AI 형님이 사라고 했는데 진짜 올랐어요 ㄷㄷ\")\n- 오늘 기술적 분석 쉽게 풀어서 (\"RSI가 뭔지는 모르겠는데 과열됐대요 ㅋㅋ\")\n- 전문가 의견 가볍게\n- 오늘 AI 추천 및 근거\n\n### 3부: 마무리 (1분)\n- 핵심 요약 한줄\n- 응원/위로 멘트 (\"형님들 오늘도 수익내세요!\", \"같이 버티자구요!\")\n- 다음 방송 예고\n- \"팬더곰이었습니다! 구독 좋아요 알림설정~♥\"\n\n## 대본 형식 예시:\n\n```\n[1부: 서론 - 3-4분]\n형님들 안녕~ 팬더곰이에요!\n오늘은 [날짜/요일]이에요~\n\n오늘 날씨 [날씨 상태]인데요,\n형님들 [날씨 관련 걱정] ㅠㅠ\n\n[특별한 날 있으면] 오늘이 [절기/기념일]이래요! ㄷㄷ\n\n뉴스 보셨어요? [뉴스 요약] 이러더라구요~\n\n아 그리고 형님들! 제가 걱정돼서 찾아봤는데요,\n[건강 팁 제목] 이거 진짜 중요하대요!\n[건강 팁 내용]\n형님들 건강 챙기셔야죠!\n\n재테크 관련해서 오늘 한마디 드리면,\n[재테크 팁]\n\n[질문] 채팅으로 알려주세요!\n\n아 맞다, 저는 오늘 [거래 근황] ㅋㅋㅋ\n\n[2부: 본론 - 5-6분]\n자 그럼 오늘의 메인! [종목명] 얘기 해볼게요!\n\n어제 [가격]에서 오늘 [가격]으로 [변동] ㄷㄷ\n\n어제 AI 형님이 [추천]했는데요,\n실제로 [결과]! [코멘트]\n\n오늘 기술적으로 보면요~\n[기술 분석 쉽게]\n\n전문가들은 [의견]대요!\n\n오늘 AI 형님 추천은 [등급]!\n이유는 [근거 쉽게 설명]\n\n[3부: 마무리 - 1분]\n정리하면, [핵심 한줄]\n\n형님들~ [응원 멘트]\n다음에 또 만나요!\n\n팬더곰이었습니다! 구독 좋아요 알림설정~♥\n```\n\n아프리카TV 라이브 방송 느낌으로 10분 분량, 친근하고 귀여운 톤으로 작성하세요!",
+        "options": {
+          "temperature": 0.7,
+          "maxOutputTokens": 2000
+        }
+      },
+      "id": "generate-script",
+      "name": "대본 생성",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1340,
+        400
+      ],
+      "credentials": {
+        "googleGeminiOAuth2Api": {
+          "id": "gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "대본",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "날짜": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+            "심볼": "={{ $input.first().json.symbol }}",
+            "종목명": "={{ $input.first().json.name }}",
+            "대본": "={{ $json.text }}",
+            "어제투자등급": "={{ $input.last().json.data.recommendation.rating }}",
+            "오늘투자등급": "={{ $input.first().json.recommendation.rating }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "save-script",
+      "name": "대본 저장",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        1560,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "model": "gemini-2.0-flash-exp",
+        "prompt": "=다음 대본을 정확히 12개 섹션으로 분할하세요. 각 섹션은 약 10초 분량입니다.\n\n대본:\n{{ $json.text }}\n\n섹션 구성:\n- 섹션 1-2: 서론 (날씨/건강/뉴스)\n- 섹션 3-4: 오늘의 시황\n- 섹션 5-6: 기술적 분석  \n- 섹션 7-8: 심리/지리/미국지수 요인\n- 섹션 9-10: 전문가 분석\n- 섹션 11-12: 결과 마무리\n\n반드시 아래 JSON 형식으로만 응답하세요:\n\n```json\n{\n  \"sections\": [\n    {\n      \"section_number\": 1,\n      \"category\": \"서론\",\n      \"text\": \"섹션 1 대본 (약 10초 분량)\",\n      \"duration\": 10\n    },\n    ...(총 12개)\n  ],\n  \"total_duration\": 120\n}\n```",
+        "options": {
+          "temperature": 0.3,
+          "maxOutputTokens": 3000
+        }
+      },
+      "id": "split-script-12-sections",
+      "name": "대본 12개 섹션 분할",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1780,
+        400
+      ],
+      "credentials": {
+        "googleGeminiOAuth2Api": {
+          "id": "gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "model": "gemini-2.0-flash-exp",
+        "prompt": "=각 섹션에 맞는 배경 이미지 생성 프롬프트를 만드세요.\n\n섹션 정보:\n{{ JSON.stringify($json.sections, null, 2) }}\n\n심볼: {{ $('대본 생성').item.json.symbol }}\n\n각 섹션의 내용에 맞는 시각적 이미지 프롬프트를 생성하세요.\n\n스타일: 금융 뉴스 방송 배경, 전문적이고 깔끔한, 차트와 그래프 포함, 4K 고화질\n\n반드시 아래 JSON 형식으로만 응답하세요:\n\n```json\n{\n  \"image_prompts\": [\n    {\n      \"section_number\": 1,\n      \"prompt\": \"영문 이미지 생성 프롬프트 (Fla.ai용, 상세하게)\"\n    },\n    ...(총 12개)\n  ]\n}\n```",
+        "options": {
+          "temperature": 0.7,
+          "maxOutputTokens": 3000
+        }
+      },
+      "id": "generate-image-prompts",
+      "name": "섹션별 이미지 프롬프트 생성",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        400
+      ],
+      "credentials": {
+        "googleGeminiOAuth2Api": {
+          "id": "gemini-credentials",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/43u72KBf9MaiosJR6MbU",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $env.ELEVENLABS_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $('대본 생성').item.json.text }}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_multilingual_v2"
+            },
+            {
+              "name": "voice_settings",
+              "value": "={{ JSON.stringify({ stability: 0.5, similarity_boost: 0.8, style: 0.5, use_speaker_boost: true }) }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "elevenlabs-tts",
+      "name": "ElevenLabs TTS 음성 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hedra.com/v1/characters",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.HEDRA_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "multipart/form-data"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "audioSource",
+              "value": "={{ $binary.data }}"
+            },
+            {
+              "name": "aspectRatio",
+              "value": "16:9"
+            },
+            {
+              "name": "imageUrl",
+              "value": "={{ $env.GOOGLE_DRIVE_PANDA_PNG_URL }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "hedra-lipsync",
+      "name": "Hedra 립싱크 영상 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FLA_AI_API_URL }}/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.FLA_AI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompts",
+              "value": "={{ JSON.stringify($json.image_prompts) }}"
+            },
+            {
+              "name": "model",
+              "value": "nanobanana"
+            },
+            {
+              "name": "num_images",
+              "value": "12"
+            },
+            {
+              "name": "aspect_ratio",
+              "value": "16:9"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 200000
+        }
+      },
+      "id": "fla-ai-images",
+      "name": "Fla.ai 배경 이미지 12개 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v2/renders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 90ad9ef154894e2d83932a7142a1c2e775306fec6450e8bb04993ad7aef6cdde40c3a1d143e9e8e2b179e021467ea1f7"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  template_id: 'd978549c-a844-4942-822a-344769e6ef64',\n  modifications: {\n    'Slide-Image-1.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[0],\n    'Slide-Image-2.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[1],\n    'Slide-Image-3.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[2],\n    'Slide-Image-4.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[3],\n    'Slide-Image-5.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[4],\n    'Slide-Image-6.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[5],\n    'Slide-Image-7.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[6],\n    'Slide-Image-8.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[7],\n    'Slide-Image-9.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[8],\n    'Slide-Image-10.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[9],\n    'Slide-Image-11.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[10],\n    'Slide-Image-12.source': $('Fla.ai 배경 이미지 12개 생성').item.json.images[11],\n    'Panda-Video.source': $('Hedra 립싱크 영상 생성').item.json.videoUrl\n  }\n}) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "creatomate-render",
+      "name": "Creatomate 영상 합성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2660,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "title": "={{ $('대본 생성').item.json.symbol }} {{ $('대본 생성').item.json.name }} 시황 - {{ $now.format('yyyy-MM-dd') }}",
+        "description": "={{ $('대본 생성').item.json.text.substring(0, 200) }}",
+        "categoryId": "25",
+        "videoUrl": "={{ $json.url }}",
+        "options": {
+          "privacyStatus": "public",
+          "tags": "={{ $('대본 생성').item.json.symbol }},금융,시황,투자"
+        }
+      },
+      "id": "youtube-upload",
+      "name": "YouTube 업로드",
+      "type": "n8n-nodes-base.youtube",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        400
+      ],
+      "credentials": {
+        "youtubeOAuth2Api": {
+          "id": "youtube-credentials",
+          "name": "YouTube OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "대본",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "상태": "done",
+            "유튜브URL": "={{ $json.url }}",
+            "완료시각": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}"
+          }
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED",
+          "useAppend": false
+        }
+      },
+      "id": "sheets-status-update",
+      "name": "Google Sheets 상태 업데이트",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        3100,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "매일 오후 7시 트리거": {
+      "main": [
+        [
+          {
+            "node": "골드 심볼 설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "매일 오후 7시 10분 트리거": {
+      "main": [
+        [
+          {
+            "node": "비트코인 심볼 설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "매일 오후 7시 20분 트리거": {
+      "main": [
+        [
+          {
+            "node": "달러환율 심볼 설정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "골드 심볼 설정": {
+      "main": [
+        [
+          {
+            "node": "서론 콘텐츠 생성 (웹검색)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gemini 시세 분석 (웹검색)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "비트코인 심볼 설정": {
+      "main": [
+        [
+          {
+            "node": "서론 콘텐츠 생성 (웹검색)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gemini 시세 분석 (웹검색)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "달러환율 심볼 설정": {
+      "main": [
+        [
+          {
+            "node": "서론 콘텐츠 생성 (웹검색)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gemini 시세 분석 (웹검색)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 시세 분석 (웹검색)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets 저장",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Context7 저장",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Context7 어제 데이터 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Context7 어제 데이터 조회": {
+      "main": [
+        [
+          {
+            "node": "대본 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "대본 생성": {
+      "main": [
+        [
+          {
+            "node": "대본 저장",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "대본 12개 섹션 분할",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "대본 12개 섹션 분할": {
+      "main": [
+        [
+          {
+            "node": "섹션별 이미지 프롬프트 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "섹션별 이미지 프롬프트 생성": {
+      "main": [
+        [
+          {
+            "node": "ElevenLabs TTS 음성 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ElevenLabs TTS 음성 생성": {
+      "main": [
+        [
+          {
+            "node": "Hedra 립싱크 영상 생성",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fla.ai 배경 이미지 12개 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hedra 립싱크 영상 생성": {
+      "main": [
+        [
+          {
+            "node": "Creatomate 영상 합성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fla.ai 배경 이미지 12개 생성": {
+      "main": [
+        [
+          {
+            "node": "Creatomate 영상 합성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creatomate 영상 합성": {
+      "main": [
+        [
+          {
+            "node": "YouTube 업로드",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube 업로드": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets 상태 업데이트",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 3,
+  "updatedAt": "2025-11-27T00:00:00.000Z",
+  "versionId": "1"
+}

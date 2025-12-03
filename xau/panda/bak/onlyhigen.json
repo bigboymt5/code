@@ -1,0 +1,29 @@
+{
+  "parameters": {
+    "method": "POST",
+    "url": "https://api.heygen.com/v1/asset",
+    "sendHeaders": true,
+    "headerParameters": {
+      "parameters": [
+        {
+          "name": "X-Api-Key",
+          "value": "sk_V2_hgu_kZldA0wChel_jo5GxyjoxsJ6gggolWF9lMsuF5jmutPk"
+        }
+      ]
+    },
+    "sendBody": true,
+    "contentType": "multipart-form-data",
+    "bodyParameters": {
+      "parameters": [
+        {
+          "name": "file",
+          "inputDataFieldName": "data"
+        }
+      ]
+    },
+    "options": {}
+  },
+  "name": "3. HeyGen 음성 업로드",
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 4.2
+}

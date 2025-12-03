@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(n8n --help:*)",
+      "Bash(n8n start)",
+      "Bash(mcp list:*)",
+      "Bash(env)",
+      "Bash(where:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

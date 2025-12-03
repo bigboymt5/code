@@ -1,0 +1,200 @@
+{
+  "name": "ElevenLabs + HeyGen (음성 URL 방식)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger-001",
+      "name": "워크플로우 시작",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/43u72KBf9MaiosJR6MbU",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "9526f7962e6f0b0912db172eb3872537068b2ec2520a1d2b9f6e094c58b87ee8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $json.prompt_sound }}\",\n  \"model_id\": \"eleven_multilingual_v2\",\n  \"output_format\": \"mp3_44100_128\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "elevenlabs-tts-001",
+      "name": "1. ElevenLabs TTS 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "name": "=tts_{{ $now.toFormat('yyyyMMdd_HHmmss') }}.mp3",
+        "resolveData": true,
+        "options": {}
+      },
+      "id": "googledrive-upload-001",
+      "name": "2. Google Drive 업로드",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [680, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "1",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": [
+            {
+              "role": "reader",
+              "type": "anyone"
+            }
+          ]
+        }
+      },
+      "id": "googledrive-share-001",
+      "name": "3. 공개 URL 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [900, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "1",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 다운로드 가능한 URL 생성\nconst file_id = $input.first().json.id;\nconst file_name = $input.first().json.name;\nconst download_url = `https://drive.google.com/uc?export=download&id=${file_id}`;\n\nreturn {\n  json: {\n    audio_url: download_url,\n    file_id: file_id,\n    file_name: file_name\n  }\n};"
+      },
+      "id": "create-download-url",
+      "name": "4. 다운로드 URL 생성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "sk_V2_hgu_kZldA0wChel_jo5GxyjoxsJ6gggolWF9lMsuF5jmutPk"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"avatar\",\n        \"avatar_id\": \"27f3f9e90afb4bf1bae5b06d582c6ca6\",\n        \"avatar_style\": \"normal\"\n      },\n      \"voice\": {\n        \"type\": \"audio\",\n        \"audio_url\": \"{{ $json.audio_url }}\"\n      },\n      \"background\": {\n        \"type\": \"color\",\n        \"value\": \"#FFFFFF\"\n      }\n    }\n  ],\n  \"dimension\": {\n    \"width\": 1920,\n    \"height\": 1080\n  },\n  \"aspect_ratio\": \"16:9\",\n  \"test\": false\n}",
+        "options": {}
+      },
+      "id": "heygen-video-001",
+      "name": "5. HeyGen 비디오 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "워크플로우 시작": {
+      "main": [
+        [
+          {
+            "node": "1. ElevenLabs TTS 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. ElevenLabs TTS 생성": {
+      "main": [
+        [
+          {
+            "node": "2. Google Drive 업로드",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Google Drive 업로드": {
+      "main": [
+        [
+          {
+            "node": "3. 공개 URL 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. 공개 URL 생성": {
+      "main": [
+        [
+          {
+            "node": "4. 다운로드 URL 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. 다운로드 URL 생성": {
+      "main": [
+        [
+          {
+            "node": "5. HeyGen 비디오 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-11-29T00:00:00.000Z",
+  "versionId": "1"
+}

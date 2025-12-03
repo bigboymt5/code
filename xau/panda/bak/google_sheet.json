@@ -1,0 +1,87 @@
+{
+  "name": "Google Sheets - 최신 날짜 행 읽기",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "워크플로우 시작",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "read",
+        "sheetId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SPREADSHEET_ID",
+          "mode": "list",
+          "cachedResultName": "나의 스프레드시트"
+        },
+        "range": "Sheet1!A:Z",
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "구글시트 읽기",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 날짜 컬럼명 (실제 시트의 컬럼명으로 변경)\nconst DATE_COLUMN = 'date';\n\n// 모든 입력 데이터 가져오기\nconst items = $input.all();\n\n// 데이터가 없는 경우 처리\nif (!items || items.length === 0) {\n  return [];\n}\n\n// 날짜 기준 내림차순 정렬 (최신 날짜가 먼저)\nconst sorted_items = items.sort((a, b) => {\n  const date_a = String(a.json[DATE_COLUMN] || '');\n  const date_b = String(b.json[DATE_COLUMN] || '');\n  \n  // 문자열 비교로 YYMMDD 형식 정렬\n  return date_b.localeCompare(date_a);\n});\n\n// 가장 최근 1개만 반환\nreturn [sorted_items[0]];"
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "최신 날짜 필터링",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "워크플로우 시작": {
+      "main": [
+        [
+          {
+            "node": "구글시트 읽기",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "구글시트 읽기": {
+      "main": [
+        [
+          {
+            "node": "최신 날짜 필터링",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-11-29T00:00:00.000Z",
+  "versionId": "1"
+}
