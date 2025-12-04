@@ -35,39 +35,24 @@ def setup_daily_logger():
 logger = setup_daily_logger()
 
 
-def get_latest_json_file(symbol, lang='ko'):
+def get_latest_json_file(symbol):
     """
     JSON 폴더에서 특정 심볼의 최신 JSON 파일 반환
-    파일 형식:
-        - 한글(ko): {SYMBOL}_{YYYYMMDD}_{HHMMSS}.json
-        - 영어(en): en_{SYMBOL}_{YYYYMMDD}_{HHMMSS}.json
-        - 일본어(jp): jp_{SYMBOL}_{YYYYMMDD}_{HHMMSS}.json
-
-    Args:
-        symbol: 심볼명 (예: XAUUSD, BTCUSD)
-        lang: 언어 (ko, en, jp) - 기본값: ko
+    파일 형식: {SYMBOL}_{YYYYMMDD}_{HHMMSS}.json
     """
     try:
         if not os.path.exists(JSON_FOLDER):
             logger.error(f"JSON 폴더가 존재하지 않습니다: {JSON_FOLDER}")
             return None
 
-        # 언어에 따른 접두사 설정
-        if lang == 'en':
-            prefix = f"en_{symbol}_"
-        elif lang == 'jp':
-            prefix = f"jp_{symbol}_"
-        else:  # 기본값 'ko'
-            prefix = f"{symbol}_"
-
         # 심볼로 시작하는 JSON 파일 필터링
         json_files = [
             f for f in os.listdir(JSON_FOLDER)
-            if f.startswith(prefix) and f.endswith('.json') and not f.startswith('all_')
+            if f.startswith(f"{symbol}_") and f.endswith('.json')
         ]
 
         if not json_files:
-            logger.error(f"심볼 {symbol} (언어: {lang})에 해당하는 JSON 파일을 찾을 수 없습니다")
+            logger.error(f"심볼 {symbol}에 해당하는 JSON 파일을 찾을 수 없습니다")
             return None
 
         # 수정 시간 기준으로 최신 파일 선택
@@ -79,7 +64,7 @@ def get_latest_json_file(symbol, lang='ko'):
         return os.path.join(JSON_FOLDER, latest_file)
 
     except Exception as e:
-        logger.error(f"최신 JSON 파일 검색 실패 (심볼: {symbol}, 언어: {lang}): {str(e)}")
+        logger.error(f"최신 JSON 파일 검색 실패 (심볼: {symbol}): {str(e)}")
         return None
 
 
@@ -90,8 +75,6 @@ def get_ticker():
     파라미터:
         h_tic: 심볼명 (예: XAUUSD, BTCUSD)
                기본값: XAUUSD
-        lang: 언어 (ko, en, jp)
-              기본값: ko (한글)
     """
     try:
         # h_tic 파라미터 가져오기 (기본값: XAUUSD)
@@ -99,22 +82,14 @@ def get_ticker():
         if not symbol:
             symbol = 'XAUUSD'
 
-        # lang 파라미터 가져오기 (기본값: ko)
-        lang = request.args.get('lang', 'ko').strip().lower()
-
-        # 유효한 언어 체크
-        if lang not in ['ko', 'en', 'jp']:
-            logger.warning(f"유효하지 않은 언어 파라미터: {lang}, 기본값 'ko' 사용")
-            lang = 'ko'
-
         # 최신 JSON 파일 찾기
-        json_file_path = get_latest_json_file(symbol, lang)
+        json_file_path = get_latest_json_file(symbol)
 
         if not json_file_path or not os.path.exists(json_file_path):
-            error_msg = f"심볼 {symbol} (언어: {lang})에 해당하는 JSON 파일을 찾을 수 없습니다"
+            error_msg = f"심볼 {symbol}에 해당하는 JSON 파일을 찾을 수 없습니다"
             logger.error(error_msg)
             return app.response_class(
-                response=json.dumps({"error": error_msg, "symbol": symbol, "lang": lang}, ensure_ascii=False, indent=2),
+                response=json.dumps({"error": error_msg, "symbol": symbol}, ensure_ascii=False, indent=2),
                 status=404,
                 mimetype='application/json'
             )
@@ -144,11 +119,7 @@ if __name__ == '__main__':
     try:
         print(f"티커 서버 시작 - 포트 5004")
         print(f"API 엔드포인트: http://localhost:5004/api/ticker/")
-        print(f"사용 예시:")
-        print(f"  - 한글: http://localhost:5004/api/ticker/?h_tic=XAUUSD")
-        print(f"  - 영어: http://localhost:5004/api/ticker/?h_tic=XAUUSD&lang=en")
-        print(f"  - 일본어: http://localhost:5004/api/ticker/?h_tic=XAUUSD&lang=jp")
-        print(f"\n주의: 일본어 데이터는 jp_fx.py로 생성됩니다")
+        print(f"사용 예시: http://localhost:5004/api/ticker/?h_tic=XAUUSD")
         app.run(host='0.0.0.0', port=5004, threaded=True)
     except Exception as e:
         logger.error(f"서버 실행 실패: {str(e)}")
@@ -156,20 +127,6 @@ if __name__ == '__main__':
 
 
 
-# 기본 사용 예시
-# http://localhost:5004/api/ticker/                        # 기본값: XAUUSD, 한글
-# http://localhost:5004/api/ticker/?h_tic=XAUUSD           # XAUUSD, 한글 (t_fx.py)
-# http://localhost:5004/api/ticker/?h_tic=BTCUSD           # BTCUSD, 한글 (t_fx.py)
-
-# 언어별 사용 예시
-# http://localhost:5004/api/ticker/?h_tic=XAUUSD&lang=ko   # XAUUSD, 한글 (t_fx.py)
-# http://localhost:5004/api/ticker/?h_tic=XAUUSD&lang=en   # XAUUSD, 영어 (t_fx.py)
-# http://localhost:5004/api/ticker/?h_tic=XAUUSD&lang=jp   # XAUUSD, 일본어 (jp_fx.py)
-
-# 다양한 심볼 + 언어 조합
-# http://localhost:5004/api/ticker/?h_tic=BTCUSD&lang=en   # BTCUSD, 영어 (t_fx.py)
-# http://localhost:5004/api/ticker/?h_tic=EURUSD&lang=jp   # EURUSD, 일본어 (jp_fx.py)
-
-# 데이터 생성 명령어:
-# 한글/영어: python t_fx.py h_val=12 h_tic=XAUUSD
-# 일본어: python jp_fx.py h_val=12 h_tic=XAUUSD
+# http://localhost:5004/api/ticker/                    # 기본값 XAUUSD
+# http://localhost:5004/api/ticker/?h_tic=XAUUSD       # XAUUSD
+# http://localhost:5004/api/ticker/?h_tic=BTCUSD       # BTCUSD

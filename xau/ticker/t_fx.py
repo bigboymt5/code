@@ -335,29 +335,18 @@ REQUIRED RESPONSE FORMAT (JSON):
 You MUST respond with ONLY a JSON object in this exact format, without any additional text:
 
 {{
-    "ko": {{
-        "current_situation": "현재 {search_keyword}의 상황을 50자 내외로 설명 (예: 급락, 급상승, 완만한 상승, 횡보, 현재 12% 상승, 20% 하락 등) - 한글",
-        "technical_analysis": "20일선, 볼린저밴드 등 검색된 기술적 지표를 사용한 100자 내외의 설명 - 한글",
-        "fundamental_analysis": "실적발표 호재 악재 이슈 사건 펀더멘털 및 심리적 요인과 지표 등 지리적 원인등에 대한 100자 내외의 설명 - 한글",
-        "expert_opinion": "검색된 전문가들의 단기적 매수 매도 의견 요약 (100자 내외) - 한글",
-        "final_recommendation": "Strong BUY" 또는 "Strong SELL" 또는 "BUY" 또는 "SELL" 또는 "HOLD"
-    }},
-    "en": {{
-        "current_situation": "Describe the current situation of {search_keyword} in about 50 characters - English",
-        "technical_analysis": "Describe technical analysis using indicators like 20-day MA, Bollinger Bands in about 100 characters - English",
-        "fundamental_analysis": "Describe fundamental and psychological factors, indicators, geopolitical reasons in about 100 characters - English",
-        "expert_opinion": "Summarize experts' short-term buy/sell opinions in about 100 characters - English",
-        "final_recommendation": "Strong BUY" or "Strong SELL" or "BUY" or "SELL" or "HOLD"
-    }}
+    "current_situation": "현재 {search_keyword}의 상황을 50자 내외로 설명 (예: 급락, 급상승, 완만한 상승, 횡보, 현재 12% 상승, 20% 하락 등)",
+    "technical_analysis": "20일선, 볼린저밴드 등 검색된 기술적 지표를 사용한 100자 내외의 설명",
+    "fundamental_analysis": "실적발표 호재 악재  이슈 사건 펀더멘털 및 심리적 요인과 지표 등 지리적 원인등  대한 100자 내외의 설명",
+    "expert_opinion": "검색된 전문가들의 단기적 매수 매도 의견 요약 (100자 내외)",
+    "final_recommendation": "Strong BUY" 또는 "Strong SELL"  또는 "BUY"  또는 "SELL" 중 아니면 "HOLD" (50자 내외)
 }}
 
 IMPORTANT:
 - Response must be ONLY valid JSON, no markdown, no code blocks, no explanations
-- Provide analysis in TWO languages: Korean (ko) and English (en)
-- All text fields in "ko" must be in Korean
-- All text fields in "en" must be in English
+- All text fields must be in Korean except final_recommendation (BUY/SELL/Strong SELL/Strong BUY/HOLD in English)
 - Stay within character limits for each field
-- final_recommendation must be exactly "Strong BUY" or "BUY" or "HOLD" or "SELL" or "Strong SELL" (same value for all languages)
+- final_recommendation must be exactly "BUY" or "SELL" "Strong BUY" or "Strong SELL" or "HOLD"
 
 Answer based on comprehensive analysis of current market data, technical indicators, and expert opinions."""
     
@@ -461,22 +450,13 @@ def get_market_analysis(api_key: str, symbol=None, hours=None):
                 {
                     "role": "system",
                     "content": """You must respond with a JSON object only, without any surrounding text, explanation, or code formatting.
-                    The JSON should be in this exact format with TWO languages:
+                    The JSON should be in this exact format:
                     {
-                        "ko": {
-                            "current_situation": "현재 상황 설명 (50자 내외, 한글)",
-                            "technical_analysis": "기술적 분석 (100자 내외, 한글)",
-                            "fundamental_analysis": "펀더멘털 분석 (100자 내외, 한글)",
-                            "expert_opinion": "전문가 의견 (100자 내외, 한글)",
-                            "final_recommendation": "Strong BUY" or "BUY" or "HOLD" or "SELL" or "Strong SELL"
-                        },
-                        "en": {
-                            "current_situation": "Current situation description (about 50 chars, English)",
-                            "technical_analysis": "Technical analysis (about 100 chars, English)",
-                            "fundamental_analysis": "Fundamental analysis (about 100 chars, English)",
-                            "expert_opinion": "Expert opinion (about 100 chars, English)",
-                            "final_recommendation": "Strong BUY" or "BUY" or "HOLD" or "SELL" or "Strong SELL"
-                        }
+                        "current_situation": "현재 상황 설명 (50자 내외, 한글)",
+                        "technical_analysis": "기술적 분석 (100자 내외, 한글)",
+                        "fundamental_analysis": "펀더멘털 분석 (100자 내외, 한글)",
+                        "expert_opinion": "전문가 의견 (50자 내외, 한글, BUY/SELL 포함)",
+                        "final_recommendation": "BUY" or "SELL"
                     }
                     Do NOT include markdown code blocks, do NOT include explanations, ONLY return the JSON object."""
                 },
@@ -500,90 +480,51 @@ def get_market_analysis(api_key: str, symbol=None, hours=None):
         try:
             json_content = json.loads(json_str)
 
-            # 2개 언어 키 확인 (한글, 영어)
-            required_langs = ['ko', 'en']
-            for lang in required_langs:
-                if lang not in json_content:
-                    print(f"\n[경고] 필수 언어 키 '{lang}'가 응답에 없습니다")
-                    raise ValueError(f"Missing language key: {lang}")
-
-            # 각 언어별 필수 키 확인
+            # 필수 키 확인
             required_keys = ['current_situation', 'technical_analysis', 'fundamental_analysis',
                             'expert_opinion', 'final_recommendation']
 
-            for lang in required_langs:
-                if lang in json_content:
-                    for key in required_keys:
-                        if key not in json_content[lang]:
-                            print(f"\n[경고] '{lang}'에서 필수 키 '{key}'가 없습니다")
+            for key in required_keys:
+                if key not in json_content:
+                    print(f"\n[경고] 필수 키 '{key}'가 응답에 없습니다")
 
             # 티커 한글명 가져오기
             ticker_name = TICKER_NAMES.get(mt5_symbol, TICKER_NAMES.get(search_keyword, ""))
 
-            # 각 언어별로 처리
-            now = datetime.now()
-            os.makedirs('json', exist_ok=True)
+            # current_situation과 expert_opinion 앞에 티커명 추가
+            if ticker_name and 'current_situation' in json_content:
+                json_content['current_situation'] = f"{ticker_name} {json_content['current_situation']}"
 
-            # 한글(ko) 처리 - current_situation과 expert_opinion에 티커명 추가
-            ko_data = json_content.get('ko', {}).copy()
-            if ticker_name and 'current_situation' in ko_data:
-                ko_data['current_situation'] = f"{ticker_name} {ko_data['current_situation']}"
-            if ticker_name and 'expert_opinion' in ko_data:
-                ko_data['expert_opinion'] = f"{ticker_name} {ko_data['expert_opinion']}"
+            if ticker_name and 'expert_opinion' in json_content:
+                json_content['expert_opinion'] = f"{ticker_name} {json_content['expert_opinion']}"
 
-            # final_recommendation에 "단기전망" + 이모지 추가 (한글만)
-            if 'final_recommendation' in ko_data:
-                recommendation = ko_data['final_recommendation']
+            # final_recommendation에 "단기전망" + 이모지 추가
+            if 'final_recommendation' in json_content:
+                recommendation = json_content['final_recommendation']
                 emoji_list = RECOMMENDATION_EMOJIS.get(recommendation, [""])
                 emoji = random.choice(emoji_list) if emoji_list else ""
-                ko_data['final_recommendation'] = f"단기전망 {emoji} {recommendation}"
+                json_content['final_recommendation'] = f"단기전망 {emoji} {recommendation}"
 
-            # 메타데이터 생성 함수
-            def create_save_data(lang_data, lang_code):
-                return {
-                    "symbol": mt5_symbol,
-                    "search_keyword": search_keyword,
-                    "display_name": ticker_name,
-                    "timeframe": f"{hours}H",
-                    "timestamp": now.strftime('%Y-%m-%d %H:%M:%S'),
-                    "language": lang_code,
-                    "analysis": lang_data
-                }
+            # JSON 파일로 저장 (검색 키워드 사용)
+            now = datetime.now()
+            filename = f"json/{search_keyword}_{now.strftime('%Y%m%d_%H%M%S')}.json"
+            os.makedirs('json', exist_ok=True)
 
-            # 2개 파일로 저장 (한글, 영어)
-            timestamp_str = now.strftime('%Y%m%d_%H%M%S')
-
-            # 1. 한글 파일 (기본명)
-            ko_filename = f"json/{search_keyword}_{timestamp_str}.json"
-            with open(ko_filename, 'w', encoding='utf-8') as f:
-                json.dump(create_save_data(ko_data, 'ko'), f, ensure_ascii=False, indent=4)
-            print(f"\n[완료] 한글 분석 결과 저장: {ko_filename}")
-
-            # 2. 영어 파일 (en_ 접두사)
-            en_filename = f"json/en_{search_keyword}_{timestamp_str}.json"
-            with open(en_filename, 'w', encoding='utf-8') as f:
-                json.dump(create_save_data(json_content['en'], 'en'), f, ensure_ascii=False, indent=4)
-            print(f"[완료] 영어 분석 결과 저장: {en_filename}")
-
-            # 원본 전체 데이터도 저장 (디버깅용)
-            all_filename = f"json/all_{search_keyword}_{timestamp_str}.json"
-            all_save_data = {
+            # 메타데이터 추가
+            save_data = {
                 "symbol": mt5_symbol,
                 "search_keyword": search_keyword,
-                "display_name": ticker_name,
+                "original_input": symbol,
                 "timeframe": f"{hours}H",
                 "timestamp": now.strftime('%Y-%m-%d %H:%M:%S'),
-                "all_languages": {
-                    "ko": ko_data,
-                    "en": json_content['en']
-                }
+                "analysis": json_content
             }
-            with open(all_filename, 'w', encoding='utf-8') as f:
-                json.dump(all_save_data, f, ensure_ascii=False, indent=4)
-            print(f"[완료] 전체 언어 통합 파일 저장: {all_filename}")
 
-            # 반환은 한글 데이터 (기존 호환성)
-            return ko_data
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(save_data, f, ensure_ascii=False, indent=4)
+
+            print(f"\n[완료] 분석 결과 저장: {filename}")
+            return json_content
 
         except json.JSONDecodeError as e:
             print(f"\n[에러] JSON 파싱 실패: {str(e)}")
