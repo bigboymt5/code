@@ -2,13 +2,15 @@ import os
 import json
 import logging
 import traceback
+import random
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 import MetaTrader5 as mt5
 import pandas as pd
 import numpy as np
 
 app = Flask(__name__)
+app.config['JSON_AS_ASCII'] = False
 
 # 설정
 LOG_FOLDER = './log'
@@ -36,6 +38,13 @@ BROKER_SYMBOLS = {
     "VIX": "VIX.r",
     "ETHUSD": "ETHUSD",
     "AMAZON": "AMAZON"
+} 
+
+# 심볼 한글 표시명 맵
+SYMBOL_DISPLAY_NAMES = {
+    "XAUUSD": "골드",
+    "BTCUSD": "비트코인",
+    "ETHUSD": "이더리움"
 }
 
 
@@ -318,8 +327,9 @@ def get_ticker_analysis():
         # 파라미터 가져오기
         symbol_input = request.args.get('h_tic', 'XAUUSD').strip()
         timeframe_str = request.args.get('timeframe', '1d').strip().lower()
+        mode = request.args.get('mode', '').strip().lower()
 
-        print(f"[요청] symbol: {symbol_input}, timeframe: {timeframe_str}")
+        print(f"[요청] symbol: {symbol_input}, timeframe: {timeframe_str}, mode: {mode}")
 
         # 심볼 정규화
         symbol = normalize_symbol(symbol_input)
@@ -378,14 +388,21 @@ def get_ticker_analysis():
         # 가격 변동 계산
         current_price = round(latest['close'], 2)
         yesterday_price = round(yesterday['close'], 2)
-        
+
+        # mode=test일 때 current_price에 랜덤 10% 변동 적용
+        if mode == 'test':
+            # 랜덤으로 +10% 또는 -10%
+            random_factor = random.choice([1.10, 0.90])
+            current_price = round(current_price * random_factor, 2)
+            print(f"[테스트 모드] 가격 변동: {latest['close']} -> {current_price} (배율: {random_factor})")
+
         # 상승/하락 금액 계산 (오늘 - 어제)
         price_change = current_price - yesterday_price
         price_change_rounded = round(price_change)
-        
+
         # 천단위 콤마 포맷
         price_change_formatted = f"{price_change_rounded:,}"
-        
+
         # 상승/하락률 계산 (어제 가격 대비 백분율)
         if yesterday_price != 0:
             price_change_percent = (price_change / yesterday_price) * 100
@@ -393,21 +410,34 @@ def get_ticker_analysis():
         else:
             price_change_percent_rounded = 0.0
 
+        # 심볼 한글 표시명
+        base_name = SYMBOL_DISPLAY_NAMES.get(symbol, symbol)
+        symbol_display_name = f"오늘의 {base_name} 시세"
+
+        # 등락 상황 (날짜 + 등락)
+        date_str = now.strftime('%y년%m월%d일')
+        if price_change_percent_rounded < 0:
+            trend_text = f"{date_str} {abs(price_change_percent_rounded)}% 하락"
+        else:
+            trend_text = f"{date_str} {price_change_percent_rounded}% 상승"
+
         # JSON 응답 생성
         response_data = {
             "symbol": symbol,
+            "symbol_display_name": symbol_display_name,
             "date": now.strftime('%y%m%d'),
             "time": now.strftime('%H%M'),
             "current_price": current_price,
             "yesterday_price": yesterday_price,
             "price_change": price_change_formatted,
             "price_change_percent": price_change_percent_rounded,
+            "price_trend": trend_text,
             "candle": timeframe_str,
             "analysis": analysis_result
         }
 
         print(f"[응답] 성공 - {symbol} @ {response_data['current_price']} (변동: {price_change_formatted}, {price_change_percent_rounded}%)")
-        return jsonify(response_data), 200
+        return Response(json.dumps(response_data, ensure_ascii=False), mimetype='application/json'), 200
 
     except Exception as e:
         error_msg = f"요청 처리 실패: {str(e)}"
@@ -433,4 +463,4 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=5003, debug=True, threaded=True)
     except Exception as e:
         logger.error(f"서버 실행 실패: {str(e)}")
-#http://localhost:5003/api/ticker/?h_tic=BTCUSD
+#http://localhost:5003/api/ticker/?h_tic=BTCUSD 
