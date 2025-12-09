@@ -1,20 +1,29 @@
 {
-  "name": "Shorts Workflow",
+  "name": "(무결점)롱폼",
   "nodes": [
     {
-      "parameters": {},
-      "id": "7f259e32-ee03-4c01-a70d-46ba764860ec",
-      "name": "Manual Trigger",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "e67ef4fb-d9cd-4cc1-9851-d780a4b52092",
+      "name": "7:00 AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [
-        0,
-        0
+        2240,
+        -3120
       ]
     },
     {
       "parameters": {
-        "url": "http://vps105.cafe24.com:5003/api/ticker/?h_tic=xauusd",
+        "url": "http://vps105.cafe24.com:5003/api/ticker/?h_tic=BTCUSD",
         "options": {
           "response": {
             "response": {
@@ -23,13 +32,124 @@
           }
         }
       },
-      "id": "4a0ebfc8-b00d-42d9-88b4-45450eb027f3",
+      "id": "b86b3283-6c8d-4135-a8c5-eda723bff5a1",
       "name": "Get Ticker Data",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        224,
-        0
+        2464,
+        -3120
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "s3",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "30dc8fe3-b905-4c75-9d15-56c691eba472",
+      "name": "Read Image Cache (s3)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2912,
+        -3120
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "s4",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "ba73c81f-f408-4906-a11c-815167e77c4d",
+      "name": "Read Video Cache (s4)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3136,
+        -3120
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const tickerData = $('Get Ticker Data').first().json;\nconst titleItems = $('Read Last Titles (s3)').all();\nconst imageCacheItems = $('Read Image Cache (s3)').all();\nconst videoCacheItems = $('Read Video Cache (s4)').all();\n\nconsole.log('=== 데이터 로드 확인 ===');\nconsole.log('티커:', tickerData.symbol);\nconsole.log('타이틀 개수:', titleItems.length);\nconsole.log('이미지 캐시 개수:', imageCacheItems.length);\nconsole.log('영상 캐시 개수:', videoCacheItems.length);\n\nconst imageCache = {};\nimageCacheItems.forEach(item => {\n  const d = item.json;\n  if (d.reused === 'N' && d.scene_key && d.image_url) {\n    imageCache[d.scene_key] = d.image_url;\n    console.log('이미지 캐시 발견:', d.scene_key);\n  }\n});\n\nconst videoCache = {};\nvideoCacheItems.forEach(item => {\n  const d = item.json;\n  if (d.reused === 'N' && d.movie_key && d.video_url) {\n    videoCache[d.movie_key] = d.video_url;\n    console.log('영상 캐시 발견:', d.movie_key);\n  }\n});\n\nconsole.log('이미지 캐시 키:', Object.keys(imageCache));\nconsole.log('영상 캐시 키:', Object.keys(videoCache));\n\nconst PARAMS = {\n  GENRE: ['시트콤', '드라마', '서바이벌', '액션', '로맨틱 코미디', '스릴러', '뮤지컬', '판타지'],\n  BACKGROUND: ['서울 강남대로', '홍대 클럽거리', '잠실 롯데타워', '부산 해운대', '제주 성산일출봉'],\n  WEATHER: ['맑음', '흐림', '비', '폭우', '천둥번개', '눈보라'],\n  COLOR: ['네온사인', '파스텔톤', '필름 카메라', '모노톤', '8비트 레트로'],\n  MOOD: ['초병맛 코미디', '눈물 멜로', '하드코어 액션', '힐링 감성'],\n  INDICATOR: ['RSI', 'MACD', '볼린저밴드', '피보나치', '이평선'],\n  TERRIBLE: ['연체 고지서', '라면 1개', '고장난 전기장판', '새는 천장'],\n  LUXURY: ['빌딩 타워', '스포츠카', '황금 목걸이', '요트 데크'],\n  CAMERA: ['Whip Pan', 'Orbit Shot', 'Slider Move', 'Crash Zoom']\n};\n\nconst pick = (arr) => arr[Math.floor(Math.random() * arr.length)];\nconst priceChange = parseFloat(tickerData.price_change || '0');\nconst isDown = priceChange < 0;\n\nlet titles = titleItems.map(item => item.json?.title || '').filter(t => t !== '').slice(-5);\nconst lastTitles = {\n  last_title_1: titles[4] || '없음',\n  last_title_2: titles[3] || '없음',\n  last_title_3: titles[2] || '없음',\n  last_title_4: titles[1] || '없음',\n  last_title_5: titles[0] || '없음'\n};\n\nreturn [{\n  json: {\n    ...tickerData,\n    ...lastTitles,\n    imageCache: imageCache,\n    videoCache: videoCache,\n    genre: pick(PARAMS.GENRE),\n    background: pick(PARAMS.BACKGROUND),\n    weather: pick(PARAMS.WEATHER),\n    color_style: pick(PARAMS.COLOR),\n    mood: pick(PARAMS.MOOD),\n    indicator: pick(PARAMS.INDICATOR),\n    prop_item: isDown ? pick(PARAMS.TERRIBLE) : pick(PARAMS.LUXURY),\n    camera_move: pick(PARAMS.CAMERA),\n    trend_type: isDown ? '하락' : '상승'\n  }\n}];"
+      },
+      "id": "d09487cb-5f77-4c4c-80d9-130665e9606c",
+      "name": "Merge Data + Cache",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3328,
+        -3232
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"sonar\", messages: [{ role: \"user\", content: \"당신은 금융 시장 분석가입니다. 아래 제공된 [Market Data]를 바탕으로, 해당 심볼(\" + $json.symbol + \")의 \" + $json.price_trend + \" 원인을 분석하세요. [Market Data] Symbol: \" + $json.symbol + \", Date: \" + $json.date + \", Price Trend: \" + $json.price_trend + \". [Constraint] 1. 반드시 웹 검색을 사용하여 최근 2~3일 이내의 뉴스나 공신력 있는 기사를 찾으세요. 2. 오늘 날짜(\" + $json.date + \") 기준 3일 이전의 오래된 뉴스는 제외하세요. 3. 아래 [Recent Titles]에 있는 장소나 사건과는 전혀 다른 새로운 내용을 찾아야 합니다. [Recent Titles]: \" + $json.last_title_1 + \", \" + $json.last_title_2 + \", \" + $json.last_title_3 + \", \" + $json.last_title_4 + \", \" + $json.last_title_5 + \". 4. 반드시 아래 JSON 형식으로만 응답하세요. {symbol: \" + $json.symbol + \", price_trend: \" + $json.price_trend + \", title: (검색된 원인을 한눈에 알 수 있는 임팩트 있는 제목), incident_location: (사건이 발생한 구체적인 장소나 건물), incident_summary: (가격 변동의 구체적인 원인 요약, 1~2문장)}\" }], temperature: 0.5 }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "new-market-analysis-node-id",
+      "name": "Analyze Market Reason",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3580,
+        -3120
       ]
     },
     {
@@ -43,27 +163,21 @@
         "messages": {
           "values": [
             {
-              "role": "system",
-              "content": "당신은 금융 투자 시나리오를 만화적 상상력으로 표현하는 크리에이티브 작가입니다. 100배 레버리지로 1억원을 투자한 사람이 청산 후 기분을 5가지 장면으로 묘사합니다.\n\n장면 레벨 기준:\n- 레벨5 (극상승, +5% 이상): 개인비행기로 두바이 가기, 스포츠카로 스위스 달리기, 하와이 호텔 수영장에서 파티, 수영장 딸린 대저택 매입\n- 레벨4 (상승, +2~5%): GV90 SUV 인수, 일본여행 이자카야에서 술\n- 레벨3 (보통, -2~+2%): 집에서 넷플릭스 시청\n- 레벨2 (하락, -2~-5%): 침대에 앉아서 고개 떨구고 울기\n- 레벨1 (극하락, -5% 이하): 한강 다리에서 아래를 쳐다보기\n\n반드시 다음 JSON 배열 형식으로만 답변하세요:\n[\n  {\"level\": 5, \"scene\": \"장면 설명\"},\n  {\"level\": 4, \"scene\": \"장면 설명\"},\n  {\"level\": 3, \"scene\": \"장면 설명\"},\n  {\"level\": 2, \"scene\": \"장면 설명\"},\n  {\"level\": 1, \"scene\": \"장면 설명\"}\n]"
-            },
-            {
-              "role": "user",
-              "content": "={{ \"다음 티커 데이터를 분석하고 현재 가격 변동률에 해당하는 레벨의 장면을 중심으로 5가지 시나리오를 생성해주세요:\\n\\n심볼: \" + $json.symbol + \"\\n현재가: \" + $json.current_price + \"\\n가격변동: \" + $json.price_change + \"\\n변동률: \" + $json.price_change_percent + \"%\\n전일가: \" + $json.yesterday_price }}"
+              "content": "=\n당신은 금융전문가이며 영화 패러디 작가이다.\n주인공 덕상이(귀여운동물) 어려운 환경을 이겨내고 금융투자로 성공하는 스토리를 만들어야 한다.\n엔딩은 항상 환상적인 해피엔딩이어야 하며, 기승전결이 분명해야한다.\n고난 => 고난의심화 => 트레이딩 => 상승 => 해피엔딩 \n\n\n[해당 심볼의 시황]\nsymbol {{ $json.symbol }}\nsymbol_display_name {{ $json.symbol_display_name }}\ndate {{ $json.date }}\ntime {{ $json.time }}\ncurrent_price {{ $json.current_price }}\nyesterday_price {{ $json.yesterday_price }}\nprice_change {{ $json.price_change }}\nprice_change_percent {{ $json.price_change_percent }}\nprice_trend {{ $json.price_trend }}\ncandle {{ $json.candle }}\n\n\n[가격 변동 원인 및 소재]\n- 타이틀/소재: {{ $json.title }}\n- 사건 발생 장소: {{ $json.incident_location }}\n- 사건 요약: {{ $json.incident_summary }}\n\n\n[랜덤 연출 파라미터]\n장르: {{ $json.genre }}\n배경 장소: {{ $json.background }}\n날씨/환경: {{ $json.weather }}\n색감 스타일: {{ $json.color_style }}\n감정/무드: {{ $json.mood }}\n기술적 지표: {{ $json.indicator }}\n소품 아이템: {{ $json.prop_item }} 외 5개추가\n카메라 무빙: {{ $json.camera_move }} 외 유사무빙 지시\n사운드 스타일: {{ $json.sound_style }}\n추세 타입: {{ $json.trend_type }}\n스마트 기기: {{ $json.smart_device }}\n심볼 등장 방식: {{ $json.symbol_appear }}\n성공 상징: {{ $json.success_symbol }} 를 제외한 유사 상징 3개이싱 추가\n성공 패션: {{ $json.success_outfit }} 를 제외한 유사 아이템 3개이상  지시  \n\n\n[스토리 전체 콘셉트]\n- **중요**: 위 [가격 변동 원인 및 소재]에 기반하여 스토리를 전개하라.\n- 처음에는 {{ $json.incident_location }} 에서 {{ $json.incident_summary }} 상황으로 인한 고난과 역경을 표현한다.\n- 기술적 지표({{ $json.indicator }})를 이용해 트레이딩을 한다\n- 트레이딩이 성공하여 고난을 이겨낸다. \n- 장르는 {{ $json.genre }}, 영상 스타일은 {{ $json.color_style }}\n- 전체 무드는 {{ $json.mood }}\n- 모든 장면에서 동일한 주인공:  (첨부된  이미지와 외형 일관성 유지)\n- 모든 장면의 배경 장소는 {{ $json.incident_location }} 또는 {{ $json.background }}를 기반으로 한다\n- 날씨/환경은 {{ $json.weather }}\n- 고난 장면 소품: {{ $json.prop_item }}\n- 모든 장면의 모든 인물은 한국인들을 묘사한다.(한글 삽입은 금지)\n- 프롬프트 생성은 100~200자 이상 작성 \n\nScene 1 ~ 5 는 사진 생성을 위한 설명이고 초기 상황이다. \nMovie 1 ~ 5 는 영상을 위한 설명이고 사진의 다음 장면이다.\n\n\n[장면 구성 규칙]\n각 장면은 아래 역할을 반드시 따른다:\n\n1- \"고난 시작\"\n(셋트,조명,분장,의상 등 패러디 작품을 표현, 색감: {{ $json.color_style }}) \nScene 1 : 100자 이상 묘사, 상반신클로즈업 {{ $json.incident_location }}에서 {{ $json.weather }} 환경, 카메라앵글 묘사  \nMovie 1 : 200자 이상 묘사, {{ $json.camera_move }}, {{ $json.sound_style }} 사운드, 동작, 독백, 주인공의 액션\n\n2- \"최악의 결과\"\n(Scene 1과 일관성을 유지, 더욱 심화되는 고난을 표현 색감: {{ $json.color_style }}) \nScene 2 :  {{ $json.prop_item }}, 부정적 요소 , {{ $json.weather }} 등 묘사 \nMovie 2 : Circular Tracking, Reveal Turn, {{ $json.sound_style }}  걸음 뛰다 운동 등의 액션추가 , 독백 \n\n3— \"구원 버튼\"\n( PC방, 집 , 골목길, 사무실 등 트레이딩장소 , 색감: {{ $json.color_style }})\nScene 3 : 주인공은 {{ $json.smart_device }}에서  Chart 를 보고 있고 차트 상단에는 Vantege 라고써있고 하단에는 BUY(초록), SELL(빨강)버튼과 10x 라는 숫자와 적혀있다.\n반드시 Over-The-Shoulder Shot으로 표현 \nMovie 3 : 긴장되는 {{ $json.sound_style }} 효과음, 디스플레이에 점점 줌인 한다. 차트에서 막대그래프 한개가  키가 커졌다 작아졌다 하면서 적색, 초록색으로 바뀐다. 주인공이 \"형님들, {{ $json.indicator }}가 이 정도면 매수진입하는거  맞지?\" 라고 대사 후 10x 를 500x 으로 올리고 BUY 버튼을 클릭한다.\n\n \n4— \"막대 그래프\"\n(Scene 3 과 동일한 장소 {{ $json.smart_device }} 색감:{{ $json.color_style }})  \nScene 4 : 화면에 {{ $json.smart_device }} 줌인 하고 그래프가 상향중이다.\nMovie 4 : Dolly-Out Arc Shot to Full Shot 으로 촬영하고 \n초록색 막대그래프는 한개는  {{ $json.smart_device }}  뚫고 천정까지 올라가고 {{ $json.symbol }}이 {{ $json.symbol_appear }} 방식으로 등장한다\n{{ $json.sound_style }} 효과음, 폭죽, 축하밴드, 박수 사람들의 찬사, 환호성 주인공은 춤을 추거나 좋아서 뛰거나 과도한 액션표현 \n\n5— \"해피 엔딩\"\n(장면 1~4 와 극적 대조되는 최고의 결과, 패러디 작품)  \t\nScene 5 : {{ $json.success_symbol }}에서 {{ $json.success_outfit }}을 착용한 주인공,   화려한 파티, 미녀들의 스킨쉽, 패러디 작품과 동일한 행복들을 다양하게 표현 \nMovie 5 : 로우 앵글로 주인공을 영웅처럼 반짝이는 조명, 수영장 반사, 크리스탈, 도시 스카이라인 또는 선셋 하늘 Party Reveal Drone Pull-Up, 360° Arc Pull-Back Reveal Shot, {{ $json.camera_move }}, 빛과 공간이 열리는 느낌을 강조하면서 샴페인,폭축,풍선 등 팡 팡! {{ $json.sound_style }} 비트업 우퍼 반짝임  필인으로 영상을 마무리\n\n\n\n[이미지 스타일 규칙]\n- {{ $json.color_style }} 색감 스타일 적용\n- 실제 {{ $json.genre }} 같은 조명과 카메라 앵글을 묘사할 것\n  (예: 로우 앵글, 하이 앵글, 클로즈업, 와이드샷, 오버 더 숄더 등)\n- 배경과 장소를 명확히 묘사 ({{ $json.incident_location }} 기반)\n- 각 장면 설명에는 반드시 다음 문구를 포함:\n  \"첨부된 주인공 이미지의 일관성 유지\"\n- 모든 인간 등장인물은 한국인으로 묘사\n- 움직임과 스펙타클한 모험 처럼 표현해야한다. \n- 한글 삽입 금지 !! \n\n[출력 형식 안내(개념)]\n- 내부적으로는 Title, Story Summary, Scene별 정보를 구성하되,\n- 최종 출력은 반드시 아래 JSON 형식으로만 출력한다.\n- Secene = 100자이상 , Movie = 200자 이상 설명. \n\n[출력 주의사항]\n- 불필요한 해설이나 메타 설명 금지 (JSON 이외의 텍스트 출력 금지)\n- 한 장면(Scene)에는 한 가지 핵심 상황만 묘사한다.\n- 주인공 외에 모든 등장인물은 모두 사람(한국인)이어야 한다.\n- scene1 부터 scene4 까지는 일관성있는 한국의 상황 장소 인물 \n- scene5 는 성공 이후이므로 해외 장소 인물 가능 \n- 프롬프트 출력시 '**' 등 정책에 위반되는 기호 출력금지 !! \n- 이미지와 영상 속에 '한글'이 들어가지 않는다. (영어와 숫자만 가능) !!\n\n[절대 사용 금지 단어 - fal.ai 콘텐츠 정책]\n- 주류: 샴페인, 와인, 맥주, 술, 위스키, 칵테일, 소주, alcohol, champagne, wine, beer\n- 흡연: 담배, 시가, 연기, cigarette, smoking, vape\n- 폭력: 총, 칼, 무기, 피, 싸움, gun, weapon, blood, fight, kill\n- 성인: 섹시, 비키니, 노출, sexy, nude, bikini\n- 도박: 카지노, 베팅, 슬롯, casino, gambling, bet\n- 약물: 마약, 대마, drug, cannabis\n필터링 예) 살수없어(x)=>버틸수없어(o),못살아(x =>힘들어(o), 괴롭힘(x =>스트레스(o)\n  샴페인(x)=>탄산음료, 술잔(X)=>물잔(o)\n\n[최종 출력 JSON 형식 ONLY]\n\n다음 JSON 형식으로만 답변하라:\n\n{\n  \"ticker\": {\n    \"symbol\": \"{{ $json.symbol }}\",\n    \"symbol_display_name\": \"{{ $json.symbol_display_name }}\",\n    \"price_change\": \"{{ $json.price_change }}\",\n    \"price_trend\": \"{{ $json.price_trend }}\"\n  },\n  \"title\": \"{{ $json.title }}\",\n  \"random_params\": {\n    \"genre\": \"{{ $json.genre }}\",\n    \"background\": \"{{ $json.background }}\",\n    \"weather\": \"{{ $json.weather }}\",\n    \"color_style\": \"{{ $json.color_style }}\",\n    \"mood\": \"{{ $json.mood }}\",\n    \"indicator\": \"{{ $json.indicator }}\",\n    \"prop_item\": \"{{ $json.prop_item }}\",\n    \"camera_move\": \"{{ $json.camera_move }}\",\n    \"sound_style\": \"{{ $json.sound_style }}\",\n    \"trend_type\": \"{{ $json.trend_type }}\",\n    \"smart_device\": \"{{ $json.smart_device }}\",\n    \"symbol_appear\": \"{{ $json.symbol_appear }}\",\n    \"success_symbol\": \"{{ $json.success_symbol }}\",\n    \"success_outfit\": \"{{ $json.success_outfit }}\"\n  },\n  \"scenes\": [\n    {\n      \"scene1\": \"정지 이미지: 패러디 작품 배경 + {{ $json.incident_location }}에서 {{ $json.weather }} 환경, {{ $json.color_style }} 색감, {{ $json.mood }} 무드, 고난 시작 상황, 감정 표현, 세트/조명/소품({{ $json.prop_item }})/의상, 카메라 앵글 필수 포함, 첨부된 주인공 이미지의 일관성 유지\",\n      \"movie1\": \"영상: {{ $json.camera_move }} 필수 + 주인공의 동작, {{ $json.sound_style }} 사운드, 독백, 특정 카메라 무빙 강조\"\n    },\n    {\n      \"scene2\": \"정지 이미지: Scene1과 동일 장면 연결 + 고난 심화, {{ $json.prop_item }} 소품 활용, 어두운 무드, {{ $json.weather }} 강조, Low Angle 또는 Dutch Angle 등 카메라 앵글 필수, 첨부된 주인공 이미지의 일관성 유지\",\n      \"movie2\": \"영상: Circular Tracking 또는 Reveal Turn 필수, {{ $json.sound_style }} 고조, 한탄 독백, 분위기 악화 표현\"\n    },\n    {\n      \"scene3\": \"정지 이미지: Over-The-Shoulder Shot 필수, 주인공이 {{ $json.smart_device }}에서 Candlestick Chart(상단: Vantege / 하단: BUY(초록) SELL(빨강) 10x 숫자 포함)를 집중 바라보는 장면, 결단 직전 긴장, {{ $json.background }} 배경 일관성 유지, 첨부된 주인공 이미지의 일관성 유지\",\n      \"movie3\": \"영상: 점진적 Zoom-In + 360° Arc 무빙 필수, 차트 색 변화(적↔초록), 주인공 대사: 형님들 {{ $json.indicator }}가 이 정도면 매수진입하는거 맞지? 말하고 레버리지 10x에서 500x 조작 후 BUY 클릭, {{ $json.sound_style }} 긴장 효과음\"\n    },\n    {\n      \"scene4\": \"정지 이미지: {{ $json.smart_device }}에서 Candlestick 위로 상승 표현 + Zoom-In 필수, 수익 증가 화면 강조, {{ $json.background }} 배경 일관성 유지, 첨부된 주인공 이미지의 일관성 유지\",\n      \"movie4\": \"영상: Dolly-Out Arc Shot to Full Shot 필수, 모니터를 뚫고 천장까지 Candlestick 상승, {{ $json.symbol }}이 {{ $json.symbol_appear }} 방식으로 등장, {{ $json.sound_style }} 효과음/환호성/춤 액션\"\n    },\n    {\n      \"scene5\": \"정지 이미지: {{ $json.success_symbol }}에서 {{ $json.success_outfit }} 착용한 주인공, 완전한 반전 성공 엔딩, 패러디 작품과 유사한 콘셉트, Low Angle Hero Shot 필수, 첨부된 주인공 이미지의 일관성 유지\",\n      \"movie5\": \"영상: Party Reveal Drone Pull-Up 또는 360° Arc Pull-Back 필수, {{ $json.camera_move }}, 조명 번쩍, 도시 스카이라인 또는 선셋, 샴페인 팡!, {{ $json.sound_style }} 비트업 음악, 엔딩\"\n    }\n  ]\n}\n\n"
             }
           ]
         },
         "options": {
-          "temperature": 0.9,
-          "responseFormat": "json_object"
+          "temperature": 0.9
         }
       },
-      "id": "948dde2d-48b4-4542-a17b-365d7a19506f",
-      "name": "Generate Scenarios with ChatGPT",
+      "id": "f2b1cf06-280d-43d5-942d-8911dfd6084d",
+      "name": "Generate Scenarios",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.7,
       "position": [
-        448,
-        0
+        1184,
+        -2720
       ],
       "credentials": {
         "openAiApi": {
@@ -71,11 +185,1329 @@
           "name": "OpenAi account 2"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatResponse = $input.first().json.message.content;\nconst baseImageUrl = 'http://vps105.cafe24.com/1.jpeg';\nconst mergedData = $('Merge Data + Cache').first().json;\n\nconst tickerData = {\n  symbol: mergedData.symbol,\n  symbol_display_name: mergedData.symbol_display_name,\n  price_change: mergedData.price_change,\n  price_change_percent: mergedData.price_change_percent,\n  price_trend: mergedData.price_trend\n};\n\nconst imageCache = mergedData.imageCache || {};\nconst videoCache = mergedData.videoCache || {};\n\nconsole.log('imageCache:', JSON.stringify(imageCache));\nconsole.log('videoCache:', JSON.stringify(videoCache));\n\nconst FILTER = {\n  '흐느끼': '슬퍼하', '한탄': '고민', '울부짖': '외치', '절규': '외침',\n  '절망': '고민', '고통': '어려움', '죽': '쓰러지', '자살': '포기',\n  '폭력': '갈등', '눈물': '감정', '우는': '감동받은', '좌절': '생각에 잠긴',\n  '샴페인': '축하 폭죽', '와인': '음료', '술': '축하'\n};\n\nfunction cleanPrompt(text) {\n  let result = (text || '').replace(/[\\r\\n]+/g, ' ').replace(/\\s+/g, ' ').replace(/\\*\\*/g, '').trim();\n  for (const [bad, safe] of Object.entries(FILTER)) {\n    result = result.replace(new RegExp(bad, 'g'), safe);\n  }\n  return result;\n}\n\nlet parsedData;\ntry {\n  let jsonStr = chatResponse;\n  const codeBlockMatch = chatResponse.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n  if (codeBlockMatch) {\n    jsonStr = codeBlockMatch[1].trim();\n  }\n  \n  const patterns = [\n    /\\{\\s*\"ticker\"[\\s\\S]*\"scenes\"[\\s\\S]*\\}/,\n    /\\{\\s*\"title\"[\\s\\S]*\"scenes\"[\\s\\S]*\\}/,\n    /\\{\\s*\"scenes\"[\\s\\S]*\\}/,\n    /\\{[\\s\\S]*\"scene1\"[\\s\\S]*\\}/\n  ];\n  \n  let jsonMatch = null;\n  for (const pattern of patterns) {\n    jsonMatch = jsonStr.match(pattern);\n    if (jsonMatch) break;\n  }\n  \n  if (!jsonMatch) {\n    const firstBrace = jsonStr.indexOf('{');\n    const lastBrace = jsonStr.lastIndexOf('}');\n    if (firstBrace !== -1 && lastBrace > firstBrace) {\n      jsonMatch = [jsonStr.substring(firstBrace, lastBrace + 1)];\n    }\n  }\n  \n  if (!jsonMatch) {\n    console.log('GPT 응답:', chatResponse.substring(0, 500));\n    throw new Error('JSON 패턴 없음');\n  }\n  \n  parsedData = JSON.parse(jsonMatch[0]);\n} catch (e) {\n  console.log('GPT 응답 전체:', chatResponse);\n  throw new Error('GPT 파싱 실패: ' + e.message);\n}\n\nconst title = parsedData.title || '타이틀 없음';\nlet scenes = parsedData.scenes || [];\nif (!Array.isArray(scenes)) scenes = Object.values(scenes);\n\nconst output = [];\nfor (let i = 1; i <= 5; i++) {\n  const sceneObj = scenes[i - 1];\n  if (!sceneObj) continue;\n  \n  const sceneKey = 'scene' + i;\n  const movieKey = 'movie' + i;\n  const scenePrompt = sceneObj[sceneKey] || sceneObj.scene || sceneObj.prompt || '';\n  const moviePrompt = sceneObj[movieKey] || sceneObj.movie || scenePrompt;\n  \n  if (!scenePrompt) continue;\n  \n  const cachedImageUrl = imageCache[sceneKey] || null;\n  const cachedVideoUrl = videoCache[movieKey] || null;\n  \n  console.log(sceneKey + ': 이미지=' + (cachedImageUrl ? 'O' : 'X') + ', 영상=' + (cachedVideoUrl ? 'O' : 'X'));\n  \n  output.push({\n    json: {\n      scene_number: i,\n      scene_key: sceneKey,\n      movie_key: movieKey,\n      scene_prompt: cleanPrompt(scenePrompt),\n      movie_prompt: cleanPrompt(moviePrompt),\n      baseImageUrl: baseImageUrl,\n      cachedImageUrl: cachedImageUrl,\n      cachedVideoUrl: cachedVideoUrl,\n      skipImageGen: cachedImageUrl ? true : false,\n      skipVideoGen: cachedVideoUrl ? true : false,\n      tickerData: tickerData,\n      title: title\n    }\n  });\n}\n\nif (output.length === 0) throw new Error('파싱된 씬 없음');\nreturn output;"
+      },
+      "id": "bc8c4f11-4fe1-4b05-83de-ac3fec1c7f25",
+      "name": "Parse Scenes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        -2720
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-cache",
+              "leftValue": "={{ $json.skipImageGen }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "354f4853-c5a6-4920-9b8e-b614fa9c7389",
+      "name": "이미지 캐시 있음?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        -2720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": " // 모든 캐시 이미지 처리\nconst items = $input.all();\nconsole.log('캐시 이미지 개수:', items.length);\n\nreturn items.map(item => {\n  const d = item.json;\n  console.log(d.scene_key + ': 캐시 이미지 사용');\n  return {\n    json: {\n      ...d,\n      generatedImageUrl: d.cachedImageUrl,\n      imageFromCache: true\n    }\n  };\n});"
+      },
+      "id": "2988e563-c2d8-4dd0-afee-1f949d257585",
+      "name": "Use Cached Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2208,
+        -2816
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fal.run/fal-ai/nano-banana-pro/edit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key 4bcc65dd-429d-4a47-a273-79765ce9ee15:a5e2564ad0228762aad3ecfeade8316f"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prompt: 'cinematic film still, photorealistic, dramatic lighting, Korean drama style, ' + $json.scene_prompt, aspect_ratio: '9:16', image_urls: [$json.baseImageUrl], output_format: 'png', resolution: '1K', num_images: 1 }) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "f8d89591-1291-431a-8dd6-761445dfab2b",
+      "name": "Generate Image (동기)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1984,
+        -2624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 모든 새 이미지 처리\nconst items = $input.all();\nconst originalItems = $('Parse Scenes').all();\n\nconsole.log('새 이미지 개수:', items.length);\n\nreturn items.map((item, index) => {\n  const d = item.json;\n  const original = originalItems.find(p => p.json.scene_number === d.scene_number)?.json \n                || originalItems[index]?.json \n                || {};\n  \n  const imageUrl = d.images?.[0]?.url;\n  if (!imageUrl) {\n    console.log('이미지 생성 실패:', original.scene_key);\n  } else {\n    console.log(original.scene_key + ': 새 이미지 생성');\n  }\n  \n  return {\n    json: {\n      ...original,\n      generatedImageUrl: imageUrl,\n      imageFromCache: false\n    }\n  };\n});"
+      },
+      "id": "2f89b1cd-c833-4092-974e-924cafb5a5da",
+      "name": "Extract New Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2208,
+        -2624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 모든 이미지 데이터 처리\nconst items = $input.all();\nconst now = new Date().toLocaleString('sv-SE', {timeZone: 'Asia/Seoul'});\n\nconsole.log('Prepare Image Data 입력:', items.length);\n\nreturn items.map(item => {\n  const d = item.json;\n  console.log(d.scene_key + ': imageUrl=' + (d.generatedImageUrl?.substring(0, 50) || '없음'));\n  \n  return {\n    json: {\n      scene_number: d.scene_number,\n      scene_key: d.scene_key,\n      movie_key: d.movie_key,\n      scene_prompt: d.scene_prompt,\n      movie_prompt: d.movie_prompt,\n      imageUrl: d.generatedImageUrl,\n      cachedVideoUrl: d.cachedVideoUrl,\n      skipVideoGen: d.skipVideoGen,\n      tickerData: d.tickerData,\n      title: d.title,\n      imageFromCache: d.imageFromCache,\n      created_at: now\n    }\n  };\n});"
+      },
+      "id": "7ccf3b4d-4d57-4ce6-866b-13576fd42552",
+      "name": "Prepare Image Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2656,
+        -2720
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "s3",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "scene_key": "={{ $json.scene_key }}",
+            "image_url": "={{ $json.imageUrl }}",
+            "prompt": "={{ $json.scene_prompt }}",
+            "created_at": "={{ $json.created_at }}",
+            "reused": "N",
+            "title": "={{ $json.title }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "scene_key",
+              "displayName": "scene_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reused",
+              "displayName": "reused",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "d72893bf-68c4-499c-817f-adada80a5eb5",
+      "name": "Save Image to Sheet (s3)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2880,
+        -2720
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// 모든 아이템 복원 (5개)\n// =============================================\nconst items = $input.all();\nconst preparedItems = $('Prepare Image Data').all();\n\nconsole.log('=== Restore Data After Save ===');\nconsole.log('입력 아이템 수:', items.length);\nconsole.log('Prepare Image Data 아이템 수:', preparedItems.length);\n\nreturn items.map((item, index) => {\n  const original = preparedItems[index]?.json || preparedItems[0]?.json || {};\n  \n  console.log('복원:', original.scene_key);\n  \n  return {\n    json: {\n      scene_number: original.scene_number,\n      scene_key: original.scene_key,\n      movie_key: original.movie_key,\n      movie_prompt: original.movie_prompt,\n      imageUrl: original.imageUrl,\n      cachedVideoUrl: original.cachedVideoUrl,\n      skipVideoGen: original.cachedVideoUrl ? true : false,\n      tickerData: original.tickerData,\n      title: original.title,\n      created_at: original.created_at\n    }\n  };\n});"
+      },
+      "id": "471a65e9-e677-4aed-acf7-425b7b43d47f",
+      "name": "Restore Data After Save",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3104,
+        -2720
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-video-cache",
+              "leftValue": "={{ $json.skipVideoGen }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f5d83a12-de2b-4054-9758-225d12423460",
+      "name": "영상 캐시 있음?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3328,
+        -2720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 모든 캐시 영상 처리\nconst items = $input.all();\nconsole.log('캐시 영상 개수:', items.length);\n\nreturn items.map(item => {\n  const d = item.json;\n  console.log(d.scene_key + ': 캐시 영상 사용');\n  return {\n    json: {\n      ...d,\n      videoUrl: d.cachedVideoUrl,\n      videoSource: 'cache'\n    }\n  };\n});"
+      },
+      "id": "d4cba209-bf34-4214-b69b-788d7255edaf",
+      "name": "Use Cached Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3776,
+        -2816
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fal.run/fal-ai/veo3.1/image-to-video",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key 4bcc65dd-429d-4a47-a273-79765ce9ee15:a5e2564ad0228762aad3ecfeade8316f"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"{{ $json.movie_prompt }}\",\n  \"image_url\": \"{{ $json.imageUrl }}\",\n  \"aspect_ratio\": \"9:16\",\n  \"duration\": \"8s\",\n  \"generate_audio\": true,\n  \"resolution\": \"720p\"\n}",
+        "options": {
+          "timeout": 600000
+        }
+      },
+      "id": "329103b0-d3f8-489c-908d-dea4087837d4",
+      "name": "Generate Video (동기)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3552,
+        -2624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 모든 새 영상 처리\nconst items = $input.all();\nconst originalItems = $('Restore Data After Save').all();\n\nconst BACKUP = [\n  'https://v3b.fal.media/files/b/0a852bb4/cDH2qCRmIPuYWWFk95suy_output.mp4',\n  'https://v3b.fal.media/files/b/0a852bb4/9Ky7E6ps_QvRaKXclpMhb_output.mp4'\n];\n\nconsole.log('새 영상 개수:', items.length);\n\nreturn items.map((item, index) => {\n  const d = item.json;\n  const original = originalItems.find(p => p.json.scene_number === d.scene_number)?.json\n                || originalItems[index]?.json\n                || {};\n  \n  let videoUrl = d.video?.url;\n  let videoSource = 'new';\n  \n  if (!videoUrl || d.detail || d.error) {\n    videoUrl = BACKUP[Math.floor(Math.random() * BACKUP.length)];\n    videoSource = 'backup';\n    console.log(original.scene_key + ': 백업 영상');\n  } else {\n    console.log(original.scene_key + ': 새 영상 생성');\n  }\n  \n  return {\n    json: {\n      ...original,\n      videoUrl: videoUrl,\n      videoSource: videoSource\n    }\n  };\n});"
+      },
+      "id": "c0bedb8c-36d6-41bd-9e07-cea345ce34a4",
+      "name": "Extract New Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3776,
+        -2624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// 모든 비디오 아이템 처리 (5개)\n// =============================================\nconst items = $input.all();\nconst now = new Date().toLocaleString('sv-SE', {timeZone: 'Asia/Seoul'});\n\nconsole.log('=== Prepare Video Data ===');\nconsole.log('입력 아이템 수:', items.length);\n\nreturn items.map(item => {\n  const d = item.json;\n  console.log(d.scene_key + ': videoUrl=' + (d.videoUrl ? d.videoUrl.substring(0, 50) : '없음'));\n  \n  return {\n    json: {\n      scene_number: d.scene_number,\n      scene_key: d.scene_key,\n      movie_key: d.movie_key,\n      movie_prompt: d.movie_prompt,\n      videoUrl: d.videoUrl,\n      imageUrl: d.imageUrl,\n      tickerData: d.tickerData,\n      title: d.title,\n      videoSource: d.videoSource,\n      created_at: now\n    }\n  };\n});"
+      },
+      "id": "4dafbe0a-c55b-4680-9d24-a3f9cea3b548",
+      "name": "Prepare Video Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4224,
+        -2720
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "s4",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "movie_key": "={{ $json.movie_key }}",
+            "video_url": "={{ $json.videoUrl }}",
+            "prompt": "={{ $json.movie_prompt }}",
+            "created_at": "={{ $json.created_at }}",
+            "reused": "N",
+            "title": "={{ $json.title }}",
+            "source_image": "={{ $json.imageUrl }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "movie_key",
+              "displayName": "movie_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reused",
+              "displayName": "reused",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source_image",
+              "displayName": "source_image",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "d91e39dd-8623-408e-9db0-ad22c65f3305",
+      "name": "Save Video to Sheet (s4)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4448,
+        -2720
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// Prepare Video Data에서 직접 5개 영상 수집\n// =============================================\nconst videoItems = $('Prepare Video Data').all();\n\nconsole.log('=== Prepare Creatomate ===');\nconsole.log('Prepare Video Data 아이템:', videoItems.length);\n\n// scene_number로 정렬\nconst sorted = videoItems\n  .map(item => item.json)\n  .sort((a, b) => a.scene_number - b.scene_number);\n\nsorted.forEach((v, i) => {\n  console.log('Video ' + (i+1) + ': ' + (v.videoUrl?.substring(0, 60) || '없음'));\n});\n\n// 티커 데이터\nconst tickerData = sorted[0]?.tickerData || {\n  symbol: 'BTCUSD',\n  symbol_display_name: '비트코인',\n  price_change: '0',\n  price_trend: '변동 없음'\n};\n\nconst title = sorted[0]?.title || '타이틀 없음';\nconst priceChange = parseFloat(tickerData.price_change || '0');\n\nconst MUSIC_DOWN = 'https://creatomate.com/files/assets/83ad3058-a5f2-40b5-bce7-609474db5f90';\nconst MUSIC_UP = 'https://creatomate.com/files/assets/718c76c7-beca-4601-b9f2-91e0b670a4bb';\n\nreturn [{ json: {\n  template_id: '7ead59eb-fc86-4248-822f-4fa840718eb8',\n  modifications: {\n    'Music.source': priceChange < 0 ? MUSIC_DOWN : MUSIC_UP,\n    'Video-1.source': sorted[0]?.videoUrl || '',\n    'Video-2.source': sorted[1]?.videoUrl || '',\n    'Video-3.source': sorted[2]?.videoUrl || '',\n    'Video-4.source': sorted[3]?.videoUrl || '',\n    'Video-5.source': sorted[4]?.videoUrl || '',\n    'symbol_display_name.text': tickerData.symbol_display_name,\n    'price_trend.text': tickerData.price_trend\n  },\n  title: title,\n  tickerData: tickerData\n} }];\n "
+      },
+      "id": "89c40b99-387d-4402-b307-2e5f751b8ad1",
+      "name": "Prepare Creatomate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4672,
+        -2720
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v2/renders",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 90ad9ef154894e2d83932a7142a1c2e775306fec6450e8bb04993ad7aef6cdde40c3a1d143e9e8e2b179e021467ea1f7"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"template_id\": \"{{ $json.template_id }}\",\n  \"modifications\": {{ JSON.stringify($json.modifications) }}\n}",
+        "options": {}
+      },
+      "id": "5f49356d-7986-4707-9ba3-4f7c2391d407",
+      "name": "Creatomate Render",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        4896,
+        -2816
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// 두 경로 모두 처리 (Direct Creatomate / Prepare Creatomate)\n// =============================================\nfunction safeGetFirst(nodeName) {\n  try {\n    return $(nodeName).first().json;\n  } catch (e) {\n    return null;\n  }\n}\n\nconst response = $input.first().json;\n\n// 두 경로 중 실행된 노드에서 데이터 가져오기\nconst directData = safeGetFirst('Direct Creatomate');\nconst prepareData = safeGetFirst('Prepare Creatomate');\n\nconst prevData = directData || prepareData || {};\n\nconst renderId = response.id || response.render_id || (Array.isArray(response) ? response[0]?.id : null);\n\nif (!renderId) {\n  console.log('Response:', JSON.stringify(response).substring(0, 200));\n  throw new Error('Render ID 없음');\n}\n\nconsole.log('=== Extract Render ID ===');\nconsole.log('렌더 ID:', renderId);\nconsole.log('타이틀:', prevData.title);\nconsole.log('데이터 소스:', directData ? 'Direct Creatomate' : 'Prepare Creatomate');\n\nreturn [{ \n  json: { \n    renderId: renderId, \n    title: prevData.title || '타이틀 없음', \n    tickerData: prevData.tickerData || {}\n  } \n}];"
+      },
+      "id": "25ca38b8-4500-4a1a-b55b-1bb3a0c4d8e5",
+      "name": "Extract Render ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5008,
+        -2480
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "id": "6d557739-0ca9-4377-bc6b-aaefa136a6d5",
+      "name": "Wait 60s (초기)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1664,
+        -2016
+      ],
+      "webhookId": "9d70ec6d-769f-4b4c-936f-0e5a31644e4f"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.creatomate.com/v2/renders/{{ $json.renderId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 90ad9ef154894e2d83932a7142a1c2e775306fec6450e8bb04993ad7aef6cdde40c3a1d143e9e8e2b179e021467ea1f7"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 180000
+        }
+      },
+      "id": "59886f49-3e6b-4d0f-875f-3e7393df1d0a",
+      "name": "Poll Render Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1888,
+        -2016
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "status-check",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "succeeded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "76d18d4a-d8fc-4ae7-9520-800b2ad23909",
+      "name": "Render 완료?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2112,
+        -2096
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prevData = $('Extract Render ID').first().json;\nreturn [{ json: { renderId: prevData.renderId, title: prevData.title, tickerData: prevData.tickerData } }];"
+      },
+      "id": "dabc1551-7f71-45dd-b3aa-da93843b265f",
+      "name": "Prepare Retry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2336,
+        -2000
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "0d9ffdc4-be70-4458-a2c8-59b257e1c4d8",
+      "name": "Wait 30s (재시도)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2560,
+        -1920
+      ],
+      "webhookId": "5a911791-c7ca-4f3a-a96b-7267de551f90"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// 두 경로 모두 처리\n// =============================================\nfunction safeGetFirst(nodeName) {\n  try {\n    return $(nodeName).first().json;\n  } catch (e) {\n    return null;\n  }\n}\n\nconst response = $input.first().json;\nconst prevData = $('Extract Render ID').first().json;\n\nconst finalVideoUrl = response.url || response.output_url;\nif (!finalVideoUrl) throw new Error('최종 비디오 URL 없음');\n\nreturn [{ \n  json: {\n    finalVideoUrl: finalVideoUrl,\n    renderId: response.id,\n    status: response.status,\n    duration: response.duration || 0,\n    title: prevData.title || '타이틀 없음',\n    symbol: prevData.tickerData?.symbol || 'BTCUSD',\n    price_trend: prevData.tickerData?.price_trend || '',\n    symbol_display_name: prevData.tickerData?.symbol_display_name || ''\n  } \n}];"
+      },
+      "id": "a7e6a8fd-e3f5-4829-9ad9-a3ead0f62814",
+      "name": "Extract Final URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2336,
+        -2192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "s2",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "number",
+              "displayName": "number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "symbol",
+              "displayName": "symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "read",
+              "displayName": "read",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "upload",
+              "displayName": "upload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "upload_url",
+              "displayName": "upload_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "etc",
+              "displayName": "etc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "finalVideoUrl",
+              "displayName": "finalVideoUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "renderId",
+              "displayName": "renderId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "youtubeVideoId",
+              "displayName": "youtubeVideoId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "videoUrl",
+              "displayName": "videoUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "uploadStatus",
+              "displayName": "uploadStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "price_trend",
+              "displayName": "price_trend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "symbol_display_name",
+              "displayName": "symbol_display_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "7a7e7b2e-588f-4266-98b9-445abc384b1e",
+      "name": "Write to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2560,
+        -2192
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.finalVideoUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "6d0d5e84-7eb9-4302-8fa1-e34d4b0e3daa",
+      "name": "Download Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2784,
+        -2192
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Extract Final URL').first().json.price_trend }} {{ $('Extract Final URL').first().json.symbol_display_name }} {{ $('Extract Final URL').first().json.title }}",
+        "regionCode": "KR",
+        "categoryId": "25",
+        "options": {}
+      },
+      "id": "45d67aa0-b11d-4e89-8584-b7842a23067b",
+      "name": "YouTube Upload",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        3008,
+        -2192
+      ],
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "fA0ssQ1PPrCVDPPT",
+          "name": "YouTube account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2432,
+        -2720
+      ],
+      "id": "d40950e7-2a98-42ca-8940-6f705dc60a18",
+      "name": "Merge"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        4000,
+        -2720
+      ],
+      "id": "c027384a-3fb2-469b-93f6-aecba1cf2c9f",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "s2",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "renderId": "={{ $('Extract Render ID').first().json.renderId }}",
+            "upload": "completed",
+            "upload_url": "=https://youtube.com/shorts/{{ $('YouTube Upload').first().json.id }}"
+          },
+          "matchingColumns": [
+            "renderId"
+          ],
+          "schema": [
+            {
+              "id": "renderId",
+              "displayName": "renderId",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "upload",
+              "displayName": "upload",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "upload_url",
+              "displayName": "upload_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d5a3353d-07f9-4190-ba7e-59f92039b95f",
+      "name": "Update Sheet (s2)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3232,
+        -2192
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// 사용된 캐시 키 목록 생성 (created_at 포함)\n// =============================================\nfunction safeGetAll(nodeName) {\n  try {\n    return $(nodeName).all();\n  } catch (e) {\n    console.log(nodeName + ' 미실행');\n    return [];\n  }\n}\n\nfunction safeGetFirst(nodeName) {\n  try {\n    return $(nodeName).first().json;\n  } catch (e) {\n    return null;\n  }\n}\n\nconsole.log('=== 캐시 업데이트 준비 ===');\n\nconst videoItems = safeGetAll('Prepare Video Data');\nconst directData = safeGetFirst('Direct Creatomate');\n\nlet updates = [];\n\nif (videoItems.length > 0) {\n  console.log('경로: Prepare Video Data');\n  console.log('아이템 수:', videoItems.length);\n  \n  updates = videoItems.map(item => {\n    const d = item.json;\n    console.log('업데이트: ' + d.scene_key + ', ' + d.movie_key + ', created_at=' + d.created_at);\n    return {\n      json: {\n        scene_key: d.scene_key,\n        movie_key: d.movie_key,\n        created_at: d.created_at,  // 추가: 고유 식별용\n        reused: 'Y'\n      }\n    };\n  });\n  \n} else if (directData && directData.fromCache) {\n  console.log('경로: Direct Creatomate (캐시)');\n  const now = new Date().toLocaleString('sv-SE', {timeZone: 'Asia/Seoul'});\n  \n  for (let i = 1; i <= 5; i++) {\n    updates.push({\n      json: {\n        scene_key: 'scene' + i,\n        movie_key: 'movie' + i,\n        created_at: now,\n        reused: 'Y'\n      }\n    });\n  }\n  \n} else {\n  console.log('경고: 업데이트할 데이터 없음');\n  return [];  // 빈 배열 반환하여 불필요한 업데이트 방지\n}\n\nconsole.log('총 업데이트:', updates.length);\nreturn updates;"
+      },
+      "id": "2dd6ae8b-23ec-49c8-a570-611b0f2e46f8",
+      "name": "Prepare Cache Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3456,
+        -2192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "s3",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "scene_key": "={{ $json.scene_key }}",
+            "reused": "Y",
+            "created_at": "{{ $json.created_at }}"
+          },
+          "matchingColumns": [
+            "created_at"
+          ],
+          "schema": [
+            {
+              "id": "scene_key",
+              "displayName": "scene_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reused",
+              "displayName": "reused",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "9211e340-3581-48d8-9f2c-3bfd425e7f99",
+      "name": "Update Image Cache (s3)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3680,
+        -2192
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "s4",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "movie_key": "={{ $json.movie_key }}",
+            "row_number": 0,
+            "created_at": "{{ $json.created_at }} ",
+            "reused": "Y"
+          },
+          "matchingColumns": [
+            "created_at"
+          ],
+          "schema": [
+            {
+              "id": "movie_key",
+              "displayName": "movie_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "video_url",
+              "displayName": "video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "prompt",
+              "displayName": "prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reused",
+              "displayName": "reused",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source_image",
+              "displayName": "source_image",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "8b60cd6d-358d-4ebd-af0b-ac6dcaa34423",
+      "name": "Update Video Cache (s4)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3904,
+        -2192
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// 영상 캐시 5개 완전 확인\n// =============================================\nconst mergedData = $input.first().json;\nconst videoCache = mergedData.videoCache || {};\n\n// movie1 ~ movie5 모두 있는지 확인\nconst requiredKeys = ['movie1', 'movie2', 'movie3', 'movie4', 'movie5'];\nconst hasAllVideos = requiredKeys.every(key => videoCache[key]);\n\nconsole.log('=== 영상 캐시 전체 확인 ===');\nrequiredKeys.forEach(key => {\n  console.log(key + ': ' + (videoCache[key] ? '있음' : '없음'));\n});\nconsole.log('5개 모두 있음:', hasAllVideos);\n\nreturn [{\n  json: {\n    ...mergedData,\n    hasFullVideoCache: hasAllVideos,\n    videoUrls: hasAllVideos ? {\n      video1: videoCache['movie1'],\n      video2: videoCache['movie2'],\n      video3: videoCache['movie3'],\n      video4: videoCache['movie4'],\n      video5: videoCache['movie5']\n    } : null\n  }\n}];"
+      },
+      "id": "9e99ba99-cea0-4c24-bb55-84d4129bea4f",
+      "name": "Check Full Video Cache",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3584,
+        -3248
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-full-cache",
+              "leftValue": "={{ $json.hasFullVideoCache }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "66994694-cb63-4fe7-95fa-316f1b6752ca",
+      "name": "영상 캐시 5개 있음?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3808,
+        -3120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// 캐시 영상 5개로 바로 Creatomate 전송\n// =============================================\nconst data = $input.first().json;\nconst videoUrls = data.videoUrls;\nconst tickerData = {\n  symbol: data.symbol,\n  symbol_display_name: data.symbol_display_name,\n  price_change: data.price_change,\n  price_change_percent: data.price_change_percent,\n  price_trend: data.price_trend\n};\n\nconst priceChange = parseFloat(data.price_change || '0');\nconst MUSIC_DOWN = 'https://creatomate.com/files/assets/83ad3058-a5f2-40b5-bce7-609474db5f90';\nconst MUSIC_UP = 'https://creatomate.com/files/assets/718c76c7-beca-4601-b9f2-91e0b670a4bb';\n\n// 타이틀 생성\nconst title = data.trend_type + ' 시장 리플레이';\n\nconsole.log('=== Direct Creatomate (캐시 사용) ===');\nconsole.log('Video 1:', videoUrls.video1?.substring(0, 60));\nconsole.log('Video 2:', videoUrls.video2?.substring(0, 60));\nconsole.log('Video 3:', videoUrls.video3?.substring(0, 60));\nconsole.log('Video 4:', videoUrls.video4?.substring(0, 60));\nconsole.log('Video 5:', videoUrls.video5?.substring(0, 60));\nconsole.log('타이틀:', title);\n\nreturn [{\n  json: {\n    template_id: '7ead59eb-fc86-4248-822f-4fa840718eb8',\n    modifications: {\n      'Music.source': priceChange < 0 ? MUSIC_DOWN : MUSIC_UP,\n      'Video-1.source': videoUrls.video1,\n      'Video-2.source': videoUrls.video2,\n      'Video-3.source': videoUrls.video3,\n      'Video-4.source': videoUrls.video4,\n      'Video-5.source': videoUrls.video5,\n      'symbol_display_name.text': tickerData.symbol_display_name,\n      'price_trend.text': tickerData.price_trend\n    },\n    title: title,\n    tickerData: tickerData,\n    fromCache: true\n  }\n}];"
+      },
+      "id": "c2fea714-aad7-4cb6-a197-7e1d99b1d768",
+      "name": "Direct Creatomate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4672,
+        -2992
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/145A5PopBsB7gkgOSEUYtXFrBTnt1fjL3ZR6JPICcTaI/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "s3",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "scene_key",
+              "lookupValue": "scene1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "59d469ff-d711-4d69-8ffe-ed5d23bbdc4b",
+      "name": "Read Last Titles (s3)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2688,
+        -3120
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Hz1lyXYFqqtY8ApQ",
+          "name": "Google Sheets account"
+        }
+      }
     }
   ],
-  "pinData": {},
   "connections": {
-    "Manual Trigger": {
+    "7:00 AM Trigger": {
       "main": [
         [
           {
@@ -90,7 +1522,475 @@
       "main": [
         [
           {
-            "node": "Generate Scenarios with ChatGPT",
+            "node": "Read Last Titles (s3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Image Cache (s3)": {
+      "main": [
+        [
+          {
+            "node": "Read Video Cache (s4)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Video Cache (s4)": {
+      "main": [
+        [
+          {
+            "node": "Merge Data + Cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Data + Cache": {
+      "main": [
+        [
+          {
+            "node": "Check Full Video Cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Market Reason": {
+      "main": [
+        [
+          {
+            "node": "Generate Scenarios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Scenarios": {
+      "main": [
+        [
+          {
+            "node": "Parse Scenes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Scenes": {
+      "main": [
+        [
+          {
+            "node": "이미지 캐시 있음?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "이미지 캐시 있음?": {
+      "main": [
+        [
+          {
+            "node": "Use Cached Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Image (동기)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Cached Image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image (동기)": {
+      "main": [
+        [
+          {
+            "node": "Extract New Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract New Image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Prepare Image Data": {
+      "main": [
+        [
+          {
+            "node": "Save Image to Sheet (s3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Image to Sheet (s3)": {
+      "main": [
+        [
+          {
+            "node": "Restore Data After Save",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Data After Save": {
+      "main": [
+        [
+          {
+            "node": "영상 캐시 있음?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "영상 캐시 있음?": {
+      "main": [
+        [
+          {
+            "node": "Use Cached Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Video (동기)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Cached Video": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video (동기)": {
+      "main": [
+        [
+          {
+            "node": "Extract New Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract New Video": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Prepare Video Data": {
+      "main": [
+        [
+          {
+            "node": "Save Video to Sheet (s4)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Video to Sheet (s4)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Creatomate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Creatomate": {
+      "main": [
+        [
+          {
+            "node": "Creatomate Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creatomate Render": {
+      "main": [
+        [
+          {
+            "node": "Extract Render ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Render ID": {
+      "main": [
+        [
+          {
+            "node": "Wait 60s (초기)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 60s (초기)": {
+      "main": [
+        [
+          {
+            "node": "Poll Render Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Render Status": {
+      "main": [
+        [
+          {
+            "node": "Render 완료?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render 완료?": {
+      "main": [
+        [
+          {
+            "node": "Extract Final URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Retry": {
+      "main": [
+        [
+          {
+            "node": "Wait 30s (재시도)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s (재시도)": {
+      "main": [
+        [
+          {
+            "node": "Poll Render Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Final URL": {
+      "main": [
+        [
+          {
+            "node": "Write to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "YouTube Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Upload": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet (s2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Prepare Image Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Video Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sheet (s2)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Cache Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Cache Update": {
+      "main": [
+        [
+          {
+            "node": "Update Image Cache (s3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Image Cache (s3)": {
+      "main": [
+        [
+          {
+            "node": "Update Video Cache (s4)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Full Video Cache": {
+      "main": [
+        [
+          {
+            "node": "영상 캐시 5개 있음?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "영상 캐시 5개 있음?": {
+      "main": [
+        [
+          {
+            "node": "Direct Creatomate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analyze Market Reason",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Direct Creatomate": {
+      "main": [
+        [
+          {
+            "node": "Creatomate Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Last Titles (s3)": {
+      "main": [
+        [
+          {
+            "node": "Read Image Cache (s3)",
             "type": "main",
             "index": 0
           }
@@ -98,15 +1998,7 @@
       ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1"
-  },
-  "versionId": "dbccf1c5-9e9f-482b-a8a5-fde3fc816095",
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "5a66dec860b2ae4bdca24e847c4e6aeda3f8317efdf2ada99cd36450328ac452"
-  },
-  "id": "d5uTZpysGBZu5Kk1",
-  "tags": []
-}
+  }
+}    
